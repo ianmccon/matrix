@@ -2,7 +2,7 @@
 
 ## Setting Up Raspberry Pi in Kiosk Mode
 
-Follow these steps to configure your Raspberry Pi to run in kiosk mode (displaying a single application, usually a web browser, in fullscreen):
+Follow these steps to configure your Raspberry Pi to run Matrix in kiosk mode with chromium:
 
 ### 1. Update Your System
 ```bash
@@ -18,15 +18,14 @@ sudo apt install --no-install-recommends xserver-xorg-video-all \
 ```
 ### 3. Clone This Repository
 
-Clone your project repository to the Raspberry Pi:
+Clone this project repository to the Raspberry Pi:
 ```bash
 git clone https://github.com/ianmccon/matrix.git /home/pi/matrix
 ```
-Replace the URL with your actual repository address.
 
 ### 4. Set Up Python Virtual Environment
 
-Navigate to your project directory and create a virtual environment:
+Navigate to the project directory and create a virtual environment:
 ```bash
 cd /home/pi/matrix
 python -m venv venv
@@ -37,7 +36,7 @@ Activate the virtual environment:
 source venv/bin/activate
 ```
 
-Install your Python dependencies:
+Install the Python dependencies:
 ```bash
 pip install -r requirements.txt
 ```
@@ -89,7 +88,7 @@ fi
 
 ### 8. Set Up Matrix to Run on Boot
 
-To run your Matrix application on startup, create a systemd service:
+To run the Matrix application on startup, create a systemd service:
 
 1. Create a new service file:
     ```bash
@@ -119,7 +118,7 @@ To run your Matrix application on startup, create a systemd service:
     sudo systemctl start matrix.service
     ```
 
-Your Matrix application will now start automatically on boot.
+The Matrix application will now start automatically on boot.
 
 ### 9. Reboot
 ```bash
