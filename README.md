@@ -12,19 +12,37 @@ sudo apt upgrade
 ```bash
 sudo apt install --no-install-recommends xserver-xorg-video-all \
   xserver-xorg-input-all xserver-xorg-core xinit x11-xserver-utils \
-  chromium-browser unclutter
+  chromium-browser unclutter python3-venv
 ```
-## 3. Configure autologin
+
+## 3. Set Up Python Virtual Environment
+
+Navigate to your project directory and create a virtual environment:
+```bash
+cd /home/pi/matrix
+python -m venv venv
+```
+
+Activate the virtual environment:
+```bash
+source venv/bin/activate
+```
+
+Install your Python dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+## 4. Configure autologin
 ```bash
 sudo raspi-config
 ```
 Go to Boot Options > Console Autologin
 
-
-## 4. Create /home/pi/.xinitrc
+## 5. Create /home/pi/.xinitrc
 Edit or create the autostart file:
 ```bash
-nano ~/.xintrc
+nano ~/.xinitrc
 ```
 Add the following lines:
 ```bash
@@ -52,7 +70,7 @@ chromium-browser http://localhost:8000 \
   --disable-pinch
 ```
 
-## 5. Set Openbox to Start on Boot
+## 6. Set Openbox to Start on Boot
 Edit `~/.bash_profile` and add:
 ```bash
 if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
@@ -60,7 +78,7 @@ if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
 fi
 ```
 
-## 6. Set Up Matrix to Run on Boot
+## 7. Set Up Matrix to Run on Boot
 
 To run your Matrix application on startup, create a systemd service:
 
@@ -94,7 +112,7 @@ To run your Matrix application on startup, create a systemd service:
 
 Your Matrix application will now start automatically on boot.
 
-## 7. Reboot
+## 8. Reboot
 ```bash
 sudo reboot
 ```
