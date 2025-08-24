@@ -174,9 +174,8 @@ def buses_fragment():
 @app.route('/weather-fragment')
 def weather_fragment():
     current_weather, forecast_days = get_weather_data()
-    if current_weather and forecast_days is None:
+    if current_weather is None or forecast_days is None:
         return render_template('fragments/weather_fragment.html', current_weather=None, forecast_days=None)
-    # Adjust to your actual logic
     return render_template('fragments/weather_fragment.html', current_weather=current_weather, forecast_days=forecast_days)
 
 # Helper: render just the news ticker
@@ -227,6 +226,7 @@ def get_this_week_bins():
 
 if app is None:
     app = Flask(__name__)
+
 
 # --- ICS PARSING ---
 def parse_ics_events_from_url(url, cal_name, color):
