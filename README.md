@@ -14,7 +14,7 @@ sudo apt upgrade
 ```bash
 sudo apt install --no-install-recommends xserver-xorg-video-all \
   xserver-xorg-input-all xserver-xorg-core xinit x11-xserver-utils \
-  chromium-browser unclutter python3-venv
+  chromium-browser unclutter python3-venv git
 ```
 ### 3. Clone This Repository
 
@@ -41,13 +41,26 @@ Install the Python dependencies:
 pip install -r requirements.txt
 ```
 
-### 5. Configure autologin
+### 5. Make run.sh executable
+```bash
+chmod +x run.sh
+```
+
+### 6. Setup config file
+```bash
+cp config_matrix.json.sample config_matrix.json
+```
+Fill the placeholder with you details for Weather API, location, latitude, longitude and calendar .ics files
+
+### 7. Configure autologin
 ```bash
 sudo raspi-config
 ```
-Go to Boot Options > Console Autologin
+Go to System Options -> Auto Login
+Esc -> TAB -> Finish
+The pi will reboot and autologin to the console
 
-### 6. Create /home/pi/.xinitrc
+### 8. Create /home/pi/.xinitrc
 Edit or create the autostart file:
 ```bash
 nano ~/.xinitrc
@@ -78,7 +91,7 @@ chromium-browser http://localhost:8000 \
   --disable-pinch
 ```
 
-### 7. Set Openbox to Start on Boot
+### 9. Set Openbox to Start on Boot
 Edit `~/.bash_profile` and add:
 ```bash
 if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
@@ -86,7 +99,7 @@ if [ -z "$DISPLAY" ] && [ "$(tty)" = "/dev/tty1" ]; then
 fi
 ```
 
-### 8. Set Up Matrix to Run on Boot
+### 10. Set Up Matrix to Run on Boot
 
 To run the Matrix application on startup, create a systemd service:
 
@@ -120,7 +133,7 @@ To run the Matrix application on startup, create a systemd service:
 
 The Matrix application will now start automatically on boot.
 
-### 9. Reboot
+### 11. Reboot
 ```bash
 sudo reboot
 ```
