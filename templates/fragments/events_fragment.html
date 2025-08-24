@@ -1,0 +1,34 @@
+{# events_fragment.html - Events list fragment for AJAX refresh #}
+<ul class="events-list">
+    {% for event in events %}
+        <li class="event-row" style="display:flex; align-items:center; justify-content:space-between;">
+            <div class="event-left" style="display:flex; align-items:center; text-align:left;">
+                {% if event.calendar|lower == 'events' %}
+                    <i class="bi bi-calendar-event event-icon event-events" title="Event" style="margin-right:10px;"></i>
+                {% elif event.calendar|lower == 'gigs' %}
+                    <i class="bi bi-music-note-beamed event-icon event-gigs" title="Gig" style="margin-right:10px;"></i>
+                {% elif event.calendar|lower == 'holidays' %}
+                    <i class="bi bi-umbrella event-icon event-holidays" title="Holiday" style="margin-right:10px;"></i>
+                {% elif event.calendar|lower == 'ian' %}
+                    <i class="bi bi-person-bounding-box event-icon event-ian" title="Ian" style="margin-right:10px;"></i>
+                {% elif event.calendar|lower == 'hazel' %}
+                    <i class="bi bi-person event-icon event-hazel" title="Hazel" style="margin-right:10px;"></i>
+                {% elif event.calendar|lower == 'hotel stays' %}
+                    <i class="bi bi-building event-icon event-hotel" title="Hotel Stay" style="margin-right:10px;"></i>
+                {% else %}
+                    <i class="bi bi-calendar2-week event-icon" title="Other" style="margin-right:10px;"></i>
+                {% endif %}
+                <span class="event-summary event-{{event.calendar|lower}}">{{ event.summary }}</span>
+            </div>
+            <div class="event-date event-{{event.calendar|lower}}">
+                {% if event.dt.__class__.__name__ == 'datetime' %}
+                    {{ event.dt.strftime('%b') }} {{ event.dt.day }}{{ 'st' if event.dt.day == 1 or event.dt.day == 21 or event.dt.day == 31 else 'nd' if event.dt.day == 2 or event.dt.day == 22 else 'rd' if event.dt.day == 3 or event.dt.day == 23 else 'th' }} {{ event.dt.strftime('%H:%M') }}
+                {% else %}
+                    {{ event.dt.strftime('%b') }} {{ event.dt.day }}{{ 'st' if event.dt.day == 1 or event.dt.day == 21 or event.dt.day == 31 else 'nd' if event.dt.day == 2 or event.dt.day == 22 else 'rd' if event.dt.day == 3 or event.dt.day == 23 else 'th' }}
+                {% endif %}
+            </div>
+        </li>
+    {% else %}
+        <li>No upcoming events.</li>
+    {% endfor %}
+</ul>

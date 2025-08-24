@@ -1,0 +1,30 @@
+{# buses_fragment.html - Bus times block fragment for AJAX refresh #}
+<div class="bus-times">
+    <table>
+        <!-- No table headers -->
+        <tbody>
+        {% for dep in sorted_deps[:12] %}
+            <tr>
+                <td>
+                    {% set bus_color = '#7fffd4' %}
+                    {% set bus_bg = '#222c2e' %}
+                    {% set bus_border = '#7fffd4' %}
+                    {% set service = dep.service|string %}
+                    {% if service == '37' %}
+                        {% set bus_color = '#fff' %}
+                        {% set bus_bg = '#800000' %} {# maroon #}
+                        {% set bus_border = '#800000' %}
+                    {% elif service == '140' %}
+                        {% set bus_color = '#fff' %}
+                        {% set bus_bg = '#0b3d1c' %} {# deep green #}
+                        {% set bus_border = '#0b3d1c' %}
+                    {% endif %}
+                    <span style="background:{{ bus_bg }}; color:{{ bus_color }}; border:2px solid {{ bus_border }};">{{ dep.service }}</span>
+                </td>
+                <td class='bus-destination'>{{ dep.destination }}</td>
+                <td class='bus-time'>{{ dep.time }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

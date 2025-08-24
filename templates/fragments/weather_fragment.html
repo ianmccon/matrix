@@ -1,0 +1,47 @@
+{# weather_fragment.html - Weather column fragment for AJAX refresh #}
+{% if current_weather and forecast_days %}
+    <div class="weather-updated">Last updated: 
+        {% if current_weather.time is defined %}
+            {{ current_weather.time[11:16] }}
+        {% else %}
+            N/A
+        {% endif %}
+    </div>
+    <div class="weather-main">
+        <div class="weather-details">
+            <div class="weather-temp">
+                <i class="bi {{ weather_map[current_weather.significantWeatherCode|string].icon if current_weather.significantWeatherCode|string in weather_map else 'bi-question-circle' }} weather-symbol" style="color: #fff; vertical-align:middle;"></i>
+                {{ current_weather.maxScreenAirTemp|default('N/A')|float|round(0)|int if current_weather.maxScreenAirTemp is defined else 'N/A' }}°C
+            </div>
+            <div class="weather-desc">{{ weather_map[current_weather.significantWeatherCode|string].desc if current_weather.significantWeatherCode|string in weather_map else 'N/A' }}</div>
+            <div class="weather-feels">Feels like: {{ current_weather.feelsLikeTemp|default('N/A')|float|round(0)|int if current_weather.feelsLikeTemp is defined else 'N/A' }}°C</div>
+            <div class="weather-rain">Rain: {{ current_weather.probOfRain|default('N/A')|float|round(0)|int if current_weather.probOfRain is defined else 'N/A' }}%</div>
+        </div>
+    </div>
+    <div class="forecast">
+        <table class="forecast-table">
+            <tbody>
+            {% for day, weekday in forecast_days %}
+                <tr class="forecast-row">
+                    <td class="forecast-weekday">
+                        {% if loop.index0 == 0 %}Today{% elif loop.index0 == 1 %}Tomorrow{% else %}{{ weekday }}{% endif %}
+                    </td>
+                    <td class="forecast-temp-high">
+                        <i class="bi {{ weather_map[day.significantWeatherCode|string].icon if day.significantWeatherCode|string in weather_map else 'bi-question-circle' }} weather-symbol" style="color: #fff; font-size:1.7em; vertical-align:middle;"></i>
+                        {{ day.maxScreenAirTemp|default('N/A')|float|round(0)|int if day.maxScreenAirTemp is defined else 'N/A' }}°C
+                    </td>
+                    <td class="forecast-temp-low">{{ day.minScreenAirTemp|default('N/A')|float|round(0)|int if day.minScreenAirTemp is defined else 'N/A' }}°C</td>
+                    <td class="forecast-desc">
+                        {{ weather_map[day.significantWeatherCode|string].desc if day.significantWeatherCode|string in weather_map else 'N/A' }}
+                        <div class="forecast-rain" style="font-size:0.95em; color:#7fffd4;">
+                            {{ day.probOfRain|default('N/A')|float|round(0)|int if day.probOfRain is defined else 'N/A' }}% rain
+                        </div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="weather-error">Weather data not available.</div>
+{% endif %}

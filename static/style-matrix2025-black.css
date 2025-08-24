@@ -1,0 +1,387 @@
+/* Colored backgrounds for event sources */
+.event-events {
+    color: #acdbbc;
+}
+.event-gigs {
+    color: #f59e42;
+}
+.event-holidays {
+    color: #d44b4b;
+}
+.event-ian {
+    color: #47b4df;
+}
+.event-hazel {
+    color: #fcfcfc;
+}
+.event-hotel {
+    color: #f5eb5c;
+}
+html, body {
+    overflow: hidden !important;
+    height: 100%;
+    font-size: 1.04em;
+}
+/* Hide scrollbars for all elements (cross-browser) */
+body::-webkit-scrollbar, html::-webkit-scrollbar, *::-webkit-scrollbar {
+    display: none;
+}
+body, html, * {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+}
+.forecast-min {
+    padding: 0.5em;
+    font-size: 1.13em;
+    color: #b2fff7;
+    font-weight: 500;
+}
+/* Wheelie bin collection section */
+.bin-collection {
+    margin-top: 2.5em;
+    margin-bottom: 1.5em;
+    background: #292929;
+    border-radius: 10px;
+    padding: 1em 1.5em;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.133);
+    display: inline-block;
+}
+.bin-title {
+    font-size: 1.18em;
+    font-weight: 600;
+    color: #7fffd4;
+    margin-bottom: 0.5em;
+}
+.bin-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7em 1.2em;
+}
+.bin-item {
+    font-size: 2.15em;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+}
+.bin-icon {
+    font-size: 1.18em;
+    margin-right: 0.2em;
+}
+.bus-times {
+    margin-top:2em; 
+    background:rgba(30,32,34,0.92); 
+    border-radius:10px; 
+    padding:1em 1.5em; 
+    box-shadow:0 2px 8px #0002;
+}
+.bus-times table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.bus-times td {
+    padding: 0.2em 0.7em;
+    color: #adaaaa;
+}
+.bus-times td:first-child {
+    color: #b2fff7;
+    text-align: left;
+}
+.bus-times td:nth-child(2) {
+    text-align: left;
+}
+.bus-times td:last-child {
+    text-align: right;
+    color: #ddbf17;
+    font-family: 'Fira Mono', monospace;
+}
+.bus-times span {
+    display: inline-block;
+    min-width: 2.5em;
+    padding: 0.18em 0.7em;
+    background: #222c2e;
+    color: #7fffd4;
+    border-radius: 0.7em;
+    border: 2px solid #7fffd4;
+    font-weight: 700;
+    font-size: 1.15em;
+    text-align: center;
+    letter-spacing: 0.01em;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+    vertical-align: middle;
+}
+.bus-times .bus-destination {
+    color: #b2fff7;
+    padding: 0.2em 0.7em;
+    text-align: left;
+    font-size: 1.1em;
+}
+.bus-times .bus-time {
+    text-align: right;
+    color: #ddbf17;
+    font-family: 'Fira Mono', monospace;
+    font-size: 1.15em;
+    padding: 0.2em 0 0.2em 0.7em;
+}
+
+
+/* Date and clock styling */
+/* Date and clock styling - more prominent */
+/* Date and clock styling */
+.date-display {
+    font-size: 2.08em;
+    margin: 60px 0 30px 0;
+    color: #b13333;
+    font-weight: bold;
+    line-height: 1.1;
+}
+.clock-display {
+    font-size: 8vw;
+    color: #ddbf17;
+    font-family: 'Digital-7-Mono', 'Consolas', 'monospace', monospace;
+    letter-spacing: 0.05em;
+    font-weight: bold;
+    line-height: 1;
+}
+
+/* Weather main styling */
+.weather-updated {
+    font-size: 1em;
+    color: #a8a6a6;
+    margin-bottom: 0.7em;
+    text-align: right;
+}
+.weather-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5em;
+    margin-bottom: 0.5em;
+}
+.weather-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.weather-temp {
+    font-size: 2.6em;
+    font-weight: bold;
+    color: #0077cc;
+}
+.weather-desc {
+    font-size: 1.13em;
+    color: #c5c1c1;
+    margin-bottom: 0.2em;
+}
+.weather-feels {
+    font-size: 1.05em;
+    color: #c5c1c1;
+}
+.weather-rain {
+    font-size: 1.05em;
+    color: #c5c1c1;
+}
+
+/* Forecast table styling */
+.forecast-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
+}
+.forecast-row {
+    text-align: center;
+    border-bottom: none;
+}
+.forecast-weekday {
+    padding: 0.5em;
+    font-weight: bold;
+}
+.forecast-icon img {
+    width: 40px;
+    height: 40px;
+}
+.forecast-temp-high {
+    padding: 0.5em;
+    font-size: 1.13em;
+    font-weight: bold;
+    color:rgb(189, 73, 60)
+}
+.forecast-temp-low {
+    padding: 0.5em;
+    font-size: 1.13em;
+    font-weight: bold;
+    color:#0077cc
+}
+.forecast-desc {
+    padding: 0.5em;
+    color: #c5c1c1;
+}
+/*
+  Theme: Matrix2025 Black
+  Description: Dark/black modern theme, Montserrat font, high contrast, neon accents, large cards, subtle hover, improved newsfeed, responsive.
+  Author: User/AI
+  Date: 2025-07-05
+*/
+
+body {
+    font-family: 'Montserrat', Arial, sans-serif;
+    margin: 0;
+    background: #232323;
+    min-height: 100vh;
+    color: #adaaaa;
+    padding-bottom: 4.5em; /* Prevent content from being hidden behind ticker */
+}
+.container {
+    display: flex;
+    height: 100vh;
+    gap: 30px;
+    justify-content: center;
+    align-items: stretch;
+    flex-direction: row;
+}
+
+/* Force weather section to third column */
+.col {
+    order: 0;
+}
+#weather-section.col {
+    order: 2;
+}
+.col {
+    flex: 1;
+    padding: 24px 20px 20px 20px;
+    box-sizing: border-box;
+    background: #232323;
+    margin: 12px 0;
+    border-radius: 18px;
+    box-shadow: 0 6px 32px 0 rgba(0,0,0,0.25), 0 1.5px 6px 0 rgba(0,0,0,0.13);
+    transition: box-shadow 0.2s;
+}
+
+.col:hover {
+    box-shadow: 0 12px 40px 0 rgba(0,255,180,0.10), 0 2px 8px 0 rgba(0,255,180,0.07);
+}
+.col h2 {
+    margin-top: 0;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #7fffd4;
+    text-shadow: 0 2px 8px #000, 0 1px 0 #222;
+}
+.events-list {
+    list-style: none;
+    padding: 0;
+}
+.events-list li {
+    margin-bottom: 14px;
+    border-bottom: 1px solid #23272b;
+    padding-bottom: 7px;
+    font-size: 1.3em;
+}
+.events-list li:last-child {
+    border-bottom: none;
+}
+.weather-icon {
+    width: 100px;
+    height: 100px;
+    filter: drop-shadow(0 2px 8px #00ffe7);
+}
+.forecast {
+    margin-top: 24px;
+}
+.center {
+    text-align: center;
+}
+.upload-form {
+    margin-bottom: 20px;
+}
+/* Remove old newsfeed styles above, now handled by .news-ticker, .news-link, .news-summary */
+
+.weather-symbol {
+    padding-right: 10px;
+}
+.news-title {
+    font-size: 1.55em;
+    font-weight: 600;
+    color: #7fffd4;
+    margin-bottom: 0.5em;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.news-ticker {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    background: #232323;
+    color: #fff;
+    z-index: 100;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.5);
+    padding: 0.9em 0 0.9em 2.2em;
+    font-size: 1.18em;
+    min-height: 3.5em;
+    /* border-top: 2px solid #7fffd4; */
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Montserrat', Arial, sans-serif;
+    margin: 0 auto;
+    text-align: center;
+    overflow: hidden;
+}
+.news-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3em;
+    width: 100%;
+    text-align: center;
+}
+.news-link {
+    color: #7fffd4;
+    font-weight: 700;
+    text-decoration: none;
+    margin-right: 1.5em;
+    font-size: 1.13em;
+    transition: color 0.2s;
+}
+.news-link:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+.newsfeed-title {
+    color: #7fffd4;
+    font-weight: 700;
+    font-size: 1.13em;
+    margin-bottom: 0.2em;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+}
+.news-summary, .newsfeed-summary {
+    color: #e0e0e0;
+    font-size: 1.18em;
+    line-height: 1.3;
+    max-width: 90vw;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    margin: 0 auto;
+}
+
+@media (max-width: 1100px) {
+    .container { flex-direction: column; height: auto; gap: 0; }
+    .col { margin: 18px 10px; }
+}
+@media (max-width: 700px) {
+    .container { flex-direction: column; height: auto; gap: 0; }
+    .col { margin: 12px 2vw; padding: 18px 4vw; }
+    #newsfeed-container { padding: 0.2em 0.5em; }
+}

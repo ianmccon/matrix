@@ -1,0 +1,12 @@
+{# news_fragment.html - News ticker fragment for AJAX refresh #}
+<div class="news-ticker">
+    <div class="news-content">
+        {% if news_items and news_items|length > 0 %}
+            <div id="news-title" class="news-title">{{ news_items[0].title }}</div>
+            <div id="news-summary" class="news-summary">{{ news_items[0].summary }}</div>
+        {% else %}
+            <div class="news-title">No news available.</div>
+            <div class="news-summary"></div>
+        {% endif %}
+    </div>
+</div>

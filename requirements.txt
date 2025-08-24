@@ -1,0 +1,9 @@
+icalendar
+requests
+Flask
+pytz
+celery
+redis
+feedparser
+gunicorn
+uvicorn
