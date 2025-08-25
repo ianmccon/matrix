@@ -14,7 +14,8 @@
       // Dashboard section refresh intervals (in ms)
       const REFRESH_EVENTS = 15 * 60 * 1000;   // 15 mins
       const REFRESH_BUSES = 5 * 60 * 1000;     // 5 mins
-      const REFRESH_WEATHER = 15 * 60 * 1000;  // 15 mins
+      const REFRESH_CURRENT_WEATHER = 60 * 60 * 1000;  // 1 hour
+      const REFRESH_FORECAST = 3 * 60 * 60 * 1000;     // 3 hours
       const REFRESH_NEWS = 60 * 60 * 1000;     // 1 hour
 
       // Helper: fetch and update a section
@@ -45,12 +46,19 @@
       }
       setTimeout(refreshBuses, REFRESH_BUSES);
 
-      // Weather refresh
-      function refreshWeather() {
-        fetchAndUpdate('/weather-fragment', '.col.center:last-child');
-        setTimeout(refreshWeather, REFRESH_WEATHER);
+      // Current weather refresh
+      function refreshCurrentWeather() {
+        fetchAndUpdate('/current-weather-fragment', '.current-weather');
+        setTimeout(refreshCurrentWeather, REFRESH_CURRENT_WEATHER);
       }
-      setTimeout(refreshWeather, REFRESH_WEATHER);
+      setTimeout(refreshCurrentWeather, REFRESH_CURRENT_WEATHER);
+
+      // 5-day forecast refresh
+      function refreshForecast() {
+        fetchAndUpdate('/forecast-weather-fragment', '.weather-forecast');
+        setTimeout(refreshForecast, REFRESH_FORECAST);
+      }
+      setTimeout(refreshForecast, REFRESH_FORECAST);
 
       // News refresh
       function refreshNews() {
@@ -70,7 +78,7 @@
     <!-- Left column: Calendar events -->
     <div class="col">
         
-        {% include 'fragments/events_fragment.html' %}
+        {% include 'fragments/events-fragment.html' %}
     </div>
     <!-- Middle column: Date and time -->
     <div class="col center">
@@ -102,7 +110,7 @@
         {% endfor %}
         {% set sorted_deps = all_deps|sort(attribute='time') %}
         <div class="bus-times">
-            {% include 'fragments/buses_fragment.html' %}
+            {% include 'fragments/buses-fragment.html' %}
         </div>
         {% else %}
             <div class="bus-times">No bus departures available.</div>
@@ -117,10 +125,11 @@
     
     <!-- Right column: Weather -->
     <div class="col center">
-        {% include 'fragments/weather_fragment.html' %}
+        {% include 'fragments/current-weather-fragment.html' %}
+        {% include 'fragments/forecast-weather-fragment.html' %}
     </div>
     <!-- News ticker -->
-    {% include 'fragments/news_fragment.html' %}
+    {% include 'fragments/news-fragment.html' %}
 </div> <!-- end .container -->
 
     

@@ -1,0 +1,25 @@
+{# weather_fragment.html - Weather column fragment for AJAX refresh #}
+{% if current_weather %}
+    <div class="current-weather">
+        <div class="weather-updated">Last updated: 
+            {% if current_weather.time is defined %}
+                {{ current_weather.time[11:16] }}
+            {% else %}
+                N/A
+            {% endif %}
+        </div>
+        <div class="weather-main">
+            <div class="weather-details">
+                <div class="weather-temp">
+                    <i class="bi {{ weather_map[current_weather.significantWeatherCode|string].icon if current_weather.significantWeatherCode|string in weather_map else 'bi-question-circle' }} weather-symbol" style="color: #fff; vertical-align:middle;"></i>
+                    {{ current_weather.maxScreenAirTemp|default('N/A')|float|round(0)|int if current_weather.maxScreenAirTemp is defined else 'N/A' }}°C
+                </div>
+                <div class="weather-desc">{{ weather_map[current_weather.significantWeatherCode|string].desc if current_weather.significantWeatherCode|string in weather_map else 'N/A' }}</div>
+                <div class="weather-feels">Feels like: {{ current_weather.feelsLikeTemp|default('N/A')|float|round(0)|int if current_weather.feelsLikeTemp is defined else 'N/A' }}°C</div>
+                <div class="weather-rain">Rain: {{ current_weather.probOfRain|default('N/A')|float|round(0)|int if current_weather.probOfRain is defined else 'N/A' }}%</div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="weather-error">Current weather data not available.</div>
+{% endif %}
