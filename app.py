@@ -280,7 +280,7 @@ def index():
     # Fetch current weather and forecast
 
     current_weather = get_current_weather()[0]
-    next_12_hours = get_current_weather()[2:14]
+    next_12_hours = get_current_weather()[1:13]
     forecast_days = get_weather_forecast()
     # Prepare weekday names for forecast
     
