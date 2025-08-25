@@ -76,7 +76,7 @@ def get_current_weather():
     lat = WEATHER_LATITUDE
     lon = WEATHER_LONGITUDE
     api_key = METOFFICE_API_KEY
-    base_url = "https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point/three-hourly"
+    base_url = "https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point/hourly"
     url = f"{base_url}?includeLocationName=true&latitude={lat}&longitude={lon}"
     headers = {
         "apikey": api_key,
@@ -98,12 +98,12 @@ def get_current_weather():
             print('No timeSeries data in Met Office response')
             return None
         # Current weather: first period
-        current = periods[0]
-        return current
+        return periods
     except Exception as e:
         print('Error fetching weather:', e)
         return None
-
+    
+    
 def get_weather_forecast(days=5):
     lat = WEATHER_LATITUDE
     lon = WEATHER_LONGITUDE
@@ -279,7 +279,8 @@ def index():
     now = datetime.datetime.now()
     # Fetch current weather and forecast
 
-    current_weather = get_current_weather()
+    current_weather = get_current_weather()[0]
+    next_12_hours = get_current_weather()[2:14]
     forecast_days = get_weather_forecast()
     # Prepare weekday names for forecast
     
@@ -301,6 +302,7 @@ def index():
         events=all_events,
         now=now,
         current_weather=current_weather,
+        next_12_hours=next_12_hours,
         forecast_days=forecast_days,
         datetimeformat=datetimeformat,
         news_items=news_items,

@@ -164,21 +164,21 @@ body, html, * {
     align-items: flex-end;
 }
 .weather-temp {
-    font-size: 2.6em;
+    font-size: 3.2em;
     font-weight: bold;
     color: #0077cc;
 }
 .weather-desc {
-    font-size: 1.13em;
+    font-size: 1.35em;
     color: #c5c1c1;
     margin-bottom: 0.2em;
 }
 .weather-feels {
-    font-size: 1.05em;
+    font-size: 1.18em;
     color: #c5c1c1;
 }
 .weather-rain {
-    font-size: 1.05em;
+    font-size: 1.18em;
     color: #c5c1c1;
 }
 
@@ -188,7 +188,7 @@ body, html, * {
     border-collapse: collapse;
     border-radius: 10px;
     overflow: hidden;
-    border: none;
+    border: 2px solid #ffd700;
 }
 .forecast-row {
     text-align: center;
@@ -196,7 +196,14 @@ body, html, * {
 }
 .forecast-weekday {
     padding: 0.5em;
+    color: #ffd700;
+    background: #222;
+}
+.hourly-hour {
+    padding: 0.5em;
     font-weight: bold;
+    color: #e4a41b;
+    background: #222;
 }
 .forecast-icon img {
     width: 40px;
@@ -205,25 +212,20 @@ body, html, * {
 .forecast-temp-high {
     padding: 0.5em;
     font-size: 1.13em;
-    font-weight: bold;
-    color:rgb(189, 73, 60)
+    color: #ff3333;
+}
+.forecast-rain {
+    color: #00ff66 !important;
 }
 .forecast-temp-low {
     padding: 0.5em;
     font-size: 1.13em;
-    font-weight: bold;
-    color:#0077cc
+    color:#0077cc;
 }
-.forecast-desc {
+/* .forecast-desc {
     padding: 0.5em;
     color: #c5c1c1;
-}
-/*
-  Theme: Matrix2025 Black
-  Description: Dark/black modern theme, Montserrat font, high contrast, neon accents, large cards, subtle hover, improved newsfeed, responsive.
-  Author: User/AI
-  Date: 2025-07-05
-*/
+} */
 
 body {
     font-family: 'Montserrat', Arial, sans-serif;
@@ -231,7 +233,7 @@ body {
     background: #232323;
     min-height: 100vh;
     color: #adaaaa;
-    padding-bottom: 4.5em; /* Prevent content from being hidden behind ticker */
+    padding-bottom: 4.5em; 
 }
 .container {
     display: flex;

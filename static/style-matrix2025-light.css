@@ -181,21 +181,21 @@ body {
     align-items: flex-end;
 }
 .weather-temp {
-    font-size: 2.5em;
+    font-size: 3em;
     font-weight: bold;
     color: #1e88e5;
 }
 .weather-desc {
-    font-size: 1.1em;
+    font-size: 1.28em;
     color: #23272b;
     margin-bottom: 0.2em;
 }
 .weather-feels {
-    font-size: 1em;
+    font-size: 1.15em;
     color: #23272b;
 }
 .weather-rain {
-    font-size: 1em;
+    font-size: 1.15em;
     color: #23272b;
 }
 /* Forecast table styling */
@@ -204,7 +204,7 @@ body {
     border-collapse: collapse;
     border-radius: 10px;
     overflow: hidden;
-    border: none;
+    border: 2px solid #ffd700;
 }
 .forecast-row {
     text-align: center;
@@ -213,6 +213,8 @@ body {
 .forecast-weekday {
     padding: 0.5em;
     font-weight: bold;
+    color: #ffd700;
+    background: #fffbe6;
 }
 .forecast-icon img {
     width: 40px;
@@ -222,7 +224,11 @@ body {
     padding: 0.5em;
     font-size: 1.1em;
     font-weight: bold;
-    color: #b13333;
+    color: #ff3333;
+.forecast-rain {
+    color: #00b84d !important;
+    font-weight: bold;
+}
 }
 .forecast-temp-low {
     padding: 0.5em;

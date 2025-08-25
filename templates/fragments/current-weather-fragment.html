@@ -15,10 +15,56 @@
                     {{ current_weather.maxScreenAirTemp|default('N/A')|float|round(0)|int if current_weather.maxScreenAirTemp is defined else 'N/A' }}°C
                 </div>
                 <div class="weather-desc">{{ weather_map[current_weather.significantWeatherCode|string].desc if current_weather.significantWeatherCode|string in weather_map else 'N/A' }}</div>
-                <div class="weather-feels">Feels like: {{ current_weather.feelsLikeTemp|default('N/A')|float|round(0)|int if current_weather.feelsLikeTemp is defined else 'N/A' }}°C</div>
-                <div class="weather-rain">Rain: {{ current_weather.probOfRain|default('N/A')|float|round(0)|int if current_weather.probOfRain is defined else 'N/A' }}%</div>
+                <div class="weather-feels">Feels like: {{ current_weather.feelsLikeTemperature|default('N/A')|float|round(0)|int if current_weather.feelsLikeTemperature is defined else 'N/A' }}°C</div>
+                <div class="weather-rain">Rain: {{ current_weather.probOfPrecipitation|default('N/A')|float|round(0)|int if current_weather.probOfPrecipitation is defined else 'N/A' }}%</div>
             </div>
         </div>
+        {% if next_12_hours %}
+            <div class="weather-forecast">
+                <table class="forecast-table">
+                    <tr>
+                        {% for hour in next_12_hours[:6] %}
+                            <th class="hourly-hour">{{ hour.time[11:16] }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for hour in next_12_hours[:6] %}
+                            <td>
+                                <i class="bi {{ weather_map[hour.significantWeatherCode|string].icon if hour.significantWeatherCode|string in weather_map else 'bi-question-circle' }} weather-symbol" style="color: #fff; vertical-align:middle;"></i>
+                                {{ hour.maxScreenAirTemp|default('N/A')|float|round(0)|int if hour.maxScreenAirTemp is defined else 'N/A' }}°C
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for hour in next_12_hours[:6] %}
+                            <td>
+                                {{ hour.probOfPrecipitation|default('N/A')|float|round(0)|int if hour.probOfPrecipitation is defined else 'N/A' }}%
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for hour in next_12_hours[6:] %}
+                            <th class="hourly-hour">{{ hour.time[11:16] }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for hour in next_12_hours[6:] %}
+                            <td>
+                                <i class="bi {{ weather_map[hour.significantWeatherCode|string].icon if hour.significantWeatherCode|string in weather_map else 'bi-question-circle' }} weather-symbol" style="color: #fff; vertical-align:middle;"></i>
+                                {{ hour.maxScreenAirTemp|default('N/A')|float|round(0)|int if hour.maxScreenAirTemp is defined else 'N/A' }}°C
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for hour in next_12_hours[6:] %}
+                            <td>
+                                {{ hour.probOfPrecipitation|default('N/A')|float|round(0)|int if hour.probOfPrecipitation is defined else 'N/A' }}%
+                            </td>
+                        {% endfor %}
+                    </tr>
+                </table>
+            </div>
+        {% endif %}
     </div>
 {% else %}
     <div class="weather-error">Current weather data not available.</div>
