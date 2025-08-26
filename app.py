@@ -185,10 +185,11 @@ def buses_fragment():
 # Helper: render just the weather column
 @app.route('/current-weather-fragment')
 def current_weather_fragment():
-    current_weather = get_current_weather()
+    current_weather = get_current_weather()[0]
+    next_12_hours = get_current_weather()[1:13]
     if current_weather is None:
-        return render_template('fragments/current-weather-fragment.html', current_weather=None, weather_map=WEATHER_MAP)
-    return render_template('fragments/current-weather-fragment.html', current_weather=current_weather, weather_map=WEATHER_MAP)
+        return render_template('fragments/current-weather-fragment.html', current_weather=None, next_12_hours=None, weather_map=WEATHER_MAP)
+    return render_template('fragments/current-weather-fragment.html', current_weather=current_weather, next_12_hours=next_12_hours, weather_map=WEATHER_MAP)
 
 @app.route('/forecast-weather-fragment')
 def forecast_weather_fragment():
