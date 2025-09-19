@@ -6,8 +6,8 @@ function updateClock() {
     let dayOfWeek = now.toLocaleString('en-US', { weekday: 'short' });
     let month = now.toLocaleString('en-US', { month: 'short' });
     let date = now.getDate();
-    let formattedDate = `${dayOfWeek}, ${month} ${date}, ${year}`;
     let year = now.getFullYear();
+    let formattedDate = `${dayOfWeek}, ${month} ${date}, ${year}`;
     const clockElem = document.getElementById('clock');
     const dateElem = document.getElementById('date');
     if (clockElem) clockElem.textContent = h + ':' + m;

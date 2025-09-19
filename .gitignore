@@ -2,3 +2,4 @@ config_matrix.json
 venv
 .vscode-server
 __pycache__/** */
+*.pyc
