@@ -3,8 +3,15 @@ function updateClock() {
     const now = new Date();
     let h = now.getHours().toString().padStart(2, '0');
     let m = now.getMinutes().toString().padStart(2, '0');
+    let dayOfWeek = now.toLocaleString('en-US', { weekday: 'short' });
+    let month = now.toLocaleString('en-US', { month: 'short' });
+    let date = now.getDate();
+    let formattedDate = `${dayOfWeek}, ${month} ${date}, ${year}`;
+    let year = now.getFullYear();
     const clockElem = document.getElementById('clock');
+    const dateElem = document.getElementById('date');
     if (clockElem) clockElem.textContent = h + ':' + m;
+    if (dateElem) dateElem.textContent = formattedDate
 }
 setInterval(updateClock, 1000);
 
@@ -20,16 +27,42 @@ function setupNewsTickerFromTemplate() {
         return;
     }
     let newsIndex = 0;
+    let tickerInterval = null;
     function showNewsItem(idx) {
         const item = window.newsEvents[idx];
         titleElem.textContent = item.title;
         summaryElem.textContent = item.summary || '';
     }
-    showNewsItem(0);
-    setInterval(function() {
-        newsIndex = (newsIndex + 1) % window.newsEvents.length;
-        showNewsItem(newsIndex);
-    }, 19000);
+    function startTicker() {
+        if (tickerInterval) clearInterval(tickerInterval);
+        showNewsItem(0);
+        tickerInterval = setInterval(function() {
+            newsIndex = (newsIndex + 1) % window.newsEvents.length;
+            showNewsItem(newsIndex);
+        }, 19000);
+    }
+    startTicker();
+
+    // Periodically refresh news from backend
+    setInterval(async function() {
+        try {
+            const resp = await fetch('/news-fragment', {cache: 'no-store'});
+            if (!resp.ok) return;
+            const html = await resp.text();
+            // Extract newsEvents from HTML fragment (assumes JSON in a script tag)
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const scriptTag = tempDiv.querySelector('script');
+            if (scriptTag) {
+                const match = scriptTag.textContent.match(/window\.newsEvents\s*=\s*(\[.*\]);/s);
+                if (match) {
+                    window.newsEvents = JSON.parse(match[1]);
+                    newsIndex = 0;
+                    startTicker();
+                }
+            }
+        } catch (e) { /* ignore */ }
+    }, 5 * 60 * 1000); // Refresh every 5 minutes
 }
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupNewsTickerFromTemplate);

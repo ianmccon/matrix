@@ -30,6 +30,7 @@ def get_events():
         events = parse_ics_events_from_url(cal['url'], cal['name'], cal['color'])
         all_events.extend(events)
     # Sort and filter future events only
+    now = datetime.datetime.now()
     def event_dt_as_datetime(e):
         dt = e['dt']
         if isinstance(dt, datetime.datetime):
@@ -39,7 +40,6 @@ def get_events():
         elif isinstance(dt, datetime.date):
             return datetime.datetime.combine(dt, datetime.time.min)
         return datetime.datetime.max
-    
     all_events = [e for e in all_events if event_dt_as_datetime(e) >= now]
     all_events.sort(key=event_dt_as_datetime)
     return all_events
