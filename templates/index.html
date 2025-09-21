@@ -72,8 +72,13 @@
       window.newsEvents = {{ news_items|tojson|safe }};
     </script>
     <script src="/static/dashboard.js"></script>
+    <style>
+      .hide-cursor {
+      cursor: none;
+      }
+    </style>
 </head>
-<body>
+<body class="hide-cursor">
 <div class="container">
     <!-- Left column: Calendar events -->
     <div class="col">
