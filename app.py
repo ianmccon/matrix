@@ -30,7 +30,6 @@ def get_events():
         events = parse_ics_events_from_url(cal['url'], cal['name'], cal['color'])
         all_events.extend(events)
     # Sort and filter future events only
-    now = datetime.datetime.now()
     def event_dt_as_datetime(e):
         dt = e['dt']
         if isinstance(dt, datetime.datetime):
@@ -40,6 +39,7 @@ def get_events():
         elif isinstance(dt, datetime.date):
             return datetime.datetime.combine(dt, datetime.time.min)
         return datetime.datetime.max
+    
     all_events = [e for e in all_events if event_dt_as_datetime(e) >= now]
     all_events.sort(key=event_dt_as_datetime)
     return all_events
@@ -72,39 +72,24 @@ def get_bus_departures():
     except Exception:
         return None
 
-def get_current_weather():
-    lat = WEATHER_LATITUDE
-    lon = WEATHER_LONGITUDE
-    api_key = METOFFICE_API_KEY
-    base_url = "https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point/hourly"
-    url = f"{base_url}?includeLocationName=true&latitude={lat}&longitude={lon}"
-    headers = {
-        "apikey": api_key,
-        "accept": "application/json"
-    }
-    try:
-        resp = requests.get(url, headers=headers)
-        if resp.status_code != 200:
-            print('Met Office weather fetch failed:', resp.text)
-            return None
-        data = resp.json()
-        features = data.get('features', [])
-        if not features:
-            print('No weather data returned from Met Office')
-            return None
-        properties = features[0].get('properties', {})
-        periods = properties.get('timeSeries', [])
-        if not periods:
-            print('No timeSeries data in Met Office response')
-            return None
-        # Current weather: first period
-        return periods
-    except Exception as e:
-        print('Error fetching weather:', e)
-        return None
-    
-    
-def get_weather_forecast(days=5):
+def get_weather_data():
+    # Try to read from cache file written by Celery
+    import os
+    import json
+    cache_path = os.path.join(os.path.dirname(__file__), 'weather_cache.json')
+    if os.path.exists(cache_path):
+        try:
+            with open(cache_path, 'r') as f:
+                cache = json.load(f)
+            current_weather = cache.get('current_weather')
+            forecast_days = cache.get('forecast_days')
+            # If cache is valid, return it
+            if current_weather and forecast_days:
+                return (current_weather, forecast_days)
+        except Exception as e:
+            print('Error reading weather cache:', e)
+            # fallback to live fetch below
+    # Fallback: fetch live from Met Office
     lat = WEATHER_LATITUDE
     lon = WEATHER_LONGITUDE
     api_key = METOFFICE_API_KEY
@@ -118,18 +103,20 @@ def get_weather_forecast(days=5):
         resp = requests.get(url, headers=headers)
         if resp.status_code != 200:
             print('Met Office weather fetch failed:', resp.text)
-            return None
+            return (None, None)
         data = resp.json()
         features = data.get('features', [])
         if not features:
             print('No weather data returned from Met Office')
-            return None
+            return (None, None)
         properties = features[0].get('properties', {})
         periods = properties.get('timeSeries', [])
         if not periods:
             print('No timeSeries data in Met Office response')
-            return None
-        # Forecast: next N days (group by date)
+            return (None, None)
+        # Current weather: first period
+        current = periods[0]
+        # Forecast: next 7 days (group by date)
         from collections import OrderedDict
         forecast_days_dict = OrderedDict()
         for period in periods:
@@ -138,19 +125,20 @@ def get_weather_forecast(days=5):
             # Use the first period for each day as the day's forecast
             if day_key not in forecast_days_dict:
                 forecast_days_dict[day_key] = period
-            if len(forecast_days_dict) >= days:
+            if len(forecast_days_dict) >= 7:
                 break
         forecast = list(forecast_days_dict.values())
         forecast_days = []
         if forecast:
             for day in forecast:
+                # Met Office periods use ISO8601 string in 'time', not 'dt'
                 dt = datetime.datetime.fromisoformat(day['time'][:-1])  # Remove 'Z'
                 weekday = dt.strftime('%a')
                 forecast_days.append((day, weekday))
-        return forecast_days
+        return (current, forecast_days)
     except Exception as e:
         print('Error fetching weather:', e)
-        return None
+        return (None, None)
 
 def get_news_items():
     newsfeed_url = "http://feeds.bbci.co.uk/news/scotland/rss.xml"
@@ -169,7 +157,7 @@ def get_news_items():
 @app.route('/events-fragment')
 def events_fragment():
     events = get_events()
-    return render_template('fragments/events-fragment.html', events=events)
+    return render_template('fragments/events_fragment.html', events=events)
 
 # Helper: render just the bus times block
 @app.route('/buses-fragment')
@@ -180,29 +168,21 @@ def buses_fragment():
         for dep in bus['departures'][:2]:
             all_deps.append({'service': bus['service'], 'destination': dep['destination'], 'time': dep['time']})
     sorted_deps = sorted(all_deps, key=lambda d: d['time'])
-    return render_template('fragments/buses-fragment.html', sorted_deps=sorted_deps)
+    return render_template('fragments/buses_fragment.html', sorted_deps=sorted_deps)
 
 # Helper: render just the weather column
-@app.route('/current-weather-fragment')
-def current_weather_fragment():
-    current_weather = get_current_weather()[0]
-    next_12_hours = get_current_weather()[1:13]
-    if current_weather is None:
-        return render_template('fragments/current-weather-fragment.html', current_weather=None, next_12_hours=None, weather_map=WEATHER_MAP)
-    return render_template('fragments/current-weather-fragment.html', current_weather=current_weather, next_12_hours=next_12_hours, weather_map=WEATHER_MAP)
-
-@app.route('/forecast-weather-fragment')
-def forecast_weather_fragment():
-    forecast_days = get_weather_forecast()
-    if forecast_days is None:
-        return render_template('fragments/forecast-weather-fragment.html', forecast_days=None, weather_map=WEATHER_MAP)
-    return render_template('fragments/forecast-weather-fragment.html', forecast_days=forecast_days, weather_map=WEATHER_MAP)
+@app.route('/weather-fragment')
+def weather_fragment():
+    current_weather, forecast_days = get_weather_data()
+    if current_weather is None or forecast_days is None:
+        return render_template('fragments/weather_fragment.html', current_weather=None, forecast_days=None)
+    return render_template('fragments/weather_fragment.html', current_weather=current_weather, forecast_days=forecast_days)
 
 # Helper: render just the news ticker
 @app.route('/news-fragment')
 def news_fragment():
     news_items = get_news_items()  # Adjust to your actual logic
-    return render_template('fragments/news-fragment.html', news_items=news_items)
+    return render_template('fragments/news_fragment.html', news_items=news_items)
 
 
 
@@ -280,9 +260,7 @@ def index():
     now = datetime.datetime.now()
     # Fetch current weather and forecast
 
-    current_weather = get_current_weather()[0]
-    next_12_hours = get_current_weather()[1:13]
-    forecast_days = get_weather_forecast()
+    current_weather, forecast_days = get_weather_data()
     # Prepare weekday names for forecast
     
     
@@ -303,7 +281,6 @@ def index():
         events=all_events,
         now=now,
         current_weather=current_weather,
-        next_12_hours=next_12_hours,
         forecast_days=forecast_days,
         datetimeformat=datetimeformat,
         news_items=news_items,

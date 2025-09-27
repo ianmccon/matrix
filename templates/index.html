@@ -66,6 +66,21 @@
         setTimeout(refreshNews, REFRESH_NEWS);
       }
       setTimeout(refreshNews, REFRESH_NEWS);
+
+      // Bin schedule refresh (every Thursday night at 23:59)
+      function msUntilNextThursdayNight() {
+        const now = new Date();
+        const day = now.getDay(); // Sunday=0, Thursday=4
+        const daysUntilThursday = (4 - day + 7) % 7;
+        const nextThursday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilThursday, 23, 59, 0, 0);
+        if (nextThursday < now) nextThursday.setDate(nextThursday.getDate() + 7);
+        return nextThursday - now;
+      }
+      function refreshBins() {
+        fetchAndUpdate('/', '.bin-collection');
+        setTimeout(refreshBins, 7 * 24 * 60 * 60 * 1000); // 1 week
+      }
+      setTimeout(refreshBins, msUntilNextThursdayNight());
     </script>
     <!-- Load external dashboard JS -->
     <script>
