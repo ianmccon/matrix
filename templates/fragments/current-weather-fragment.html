@@ -5,8 +5,8 @@
             Updated: {% if pirate_weather.time is defined %}{{ pirate_weather.time[11:16] }}{% else %}N/A{% endif %}
         </div>
         
-        <div class="weather-main">
-            <div class="weather-large">
+        <div class="weather-main" style="display:flex; align-items:center; gap:0.4rem;">
+            <div class="weather-large" style="display:flex; align-items:center; gap:0.4rem; flex:1;">
                 <div class="weather-icon-container">
                     {% set code = pirate_weather.significantWeatherCode|string %}
                     <canvas class="skycon-canvas" width="64" height="64" data-weather-code="{{ code }}"></canvas>
@@ -23,30 +23,23 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="weather-grid">
-            <div class="weather-item">
-                <div class="weather-label">Feels Like</div>
-                <div class="weather-value">
-                    {{ pirate_weather.feelsLikeTemperature|default('N/A')|float|round(0)|int if pirate_weather.feelsLikeTemperature is defined else 'N/A' }}°C
-                </div>
+            <div class="weather-stats">
+                <table class="weather-stats-table" style="border-collapse:collapse; min-width:160px;">
+                    <tr>
+                        <td class="ws-label" style="color:#aaa; padding:6px 8px; font-size:0.85rem;">Feels Like</td>
+                        <td class="ws-value" style="text-align:right; padding:6px 8px; font-weight:600;">{{ pirate_weather.feelsLikeTemperature|default('N/A')|float|round(0)|int if pirate_weather.feelsLikeTemperature is defined else 'N/A' }}°C</td>
+                    </tr>
+                    <tr>
+                        <td class="ws-label" style="color:#aaa; padding:6px 8px; font-size:0.85rem;">Rain</td>
+                        <td class="ws-value" style="text-align:right; padding:6px 8px; font-weight:600;">{{ pirate_weather.probOfPrecipitation|default('N/A')|float|round(0)|int if pirate_weather.probOfPrecipitation is defined else 'N/A' }}%</td>
+                    </tr>
+                    <tr>
+                        <td class="ws-label" style="color:#aaa; padding:6px 8px; font-size:0.85rem;">Wind</td>
+                        <td class="ws-value" style="text-align:right; padding:6px 8px; font-weight:600;">{{ (pirate_weather.windSpeed * 2.237)|default('N/A')|float|round(0)|int if pirate_weather.windSpeed is defined else 'N/A' }} mph</td>
+                    </tr>
+                </table>
             </div>
-            
-            <div class="weather-item">
-                <div class="weather-label">Rain</div>
-                <div class="weather-value">
-                    {{ pirate_weather.probOfPrecipitation|default('N/A')|float|round(0)|int if pirate_weather.probOfPrecipitation is defined else 'N/A' }}%
-                </div>
-            </div>
-            
-            <div class="weather-item">
-                <div class="weather-label">Wind</div>
-                <div class="weather-value">
-                    {{ (pirate_weather.windSpeed * 2.237)|default('N/A')|float|round(0)|int if pirate_weather.windSpeed is defined else 'N/A' }} mph
-                </div>
-            </div>
-            
         </div>
     </div>
     
@@ -128,22 +121,17 @@
             font-style: italic;
         }
         
-        .weather-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 0.75rem;
-            margin-top: 1rem;
-        }
-        
-        .weather-item {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0.4rem;
-            padding: 0.6rem;
+        .weather-stats {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            align-items: center;
         }
+        .weather-stats-table {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255,255,255,0.06);
+            width: 100%;
+        }
+        .weather-stats-table td { padding: 4px 6px; }
         
         .weather-label {
             font-size: 0.7rem;
