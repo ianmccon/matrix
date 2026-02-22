@@ -12,7 +12,7 @@
     <link href="https://fonts.cdnfonts.com/css/digital-7-Mono" rel="stylesheet">
     <script>
       // Dashboard section refresh intervals (in ms)
-      const REFRESH_EVENTS = 1 * 60 * 1000;   // 10 mins
+      const REFRESH_EVENTS = 10 * 60 * 1000;   // 10 mins
       const REFRESH_CURRENT_WEATHER = 60 * 60 * 1000;  // 1 hour
       const REFRESH_FORECAST = 3 * 60 * 60 * 1000;     // 3 hours
       const REFRESH_NEWS = 60 * 60 * 1000;     // 1 hour
@@ -129,10 +129,17 @@
         setTimeout(refreshEvents, REFRESH_EVENTS);
       }
 
+      function applyBinColors() {
+        document.querySelectorAll('.bin-item[data-bin-color]').forEach((el) => {
+          el.style.color = el.dataset.binColor;
+        });
+      }
+
       function scheduleInitialFetches() {
         // initial fetches that need DOM elements present
         // start the events refresh loop (does initial fetch and schedules next)
         refreshEvents();
+        applyBinColors();
         // also trigger initial todoist/buses fetches if their functions are defined
         try { if (typeof refreshTodoist === 'function') refreshTodoist(); } catch (e) {}
         try { if (typeof refreshBuses === 'function') refreshBuses(); } catch (e) {}
@@ -192,13 +199,16 @@
       }
       function refreshBins() {
         fetchAndUpdate('/', '.bin-collection');
+        setTimeout(applyBinColors, 300);
         setTimeout(refreshBins, 7 * 24 * 60 * 60 * 1000); // 1 week
       }
       setTimeout(refreshBins, msUntilNextThursdayNight());
     </script>
     <!-- Load external dashboard JS -->
+    <script id="news-events-data" type="application/json">{{ news_items|tojson|safe }}</script>
     <script>
-      window.newsEvents = {{ news_items|tojson|safe }};
+      const newsEventsData = document.getElementById('news-events-data');
+      window.newsEvents = newsEventsData ? JSON.parse(newsEventsData.textContent || '[]') : [];
     </script>
     <script src="/static/dashboard.js"></script>
     <style>
@@ -239,7 +249,7 @@
             <div class="bin-title">This week's bin collection ({{ bin_info.collection_day }}):</div>
             <div class="bin-list">
                 {% for bin in bin_info.bins %}
-                    <span class="bin-item" style="color: {{ bin.color }};">
+                    <span class="bin-item" data-bin-color="{{ bin.color }}">
                         <span class="bin-icon"><img src="{{ bin.icon }}" alt="{{ bin.name }} bin" style="height:1.5em;vertical-align:middle;"></span> {{ bin.name }}
                     </span>
                 {% endfor %}
