@@ -39,7 +39,11 @@
                         {% if loop.index0 == 0 %}Today{% elif loop.index0 == 1 %}Tomorrow{% else %}{{ weekday }}{% endif %}
                     </td>
                     <td class="forecast-icon">
-                        <i class="weather-icon bi {{ weather_map[day.significantWeatherCode|string].icon if day.significantWeatherCode|string in weather_map else 'bi-question-circle' }}"></i>
+                        {% set dcode = day.significantWeatherCode|string %}
+                        <canvas class="skycon-canvas" width="40" height="40" data-weather-code="{{ dcode }}"></canvas>
+                        <noscript>
+                            <span class="weather-icon weather-emoji">{{ weather_map[dcode].symbol if dcode in weather_map else '❓' }}</span>
+                        </noscript>
                     </td>
                     <td class="forecast-temps">
                         <span class="temp-high">{{ day.maxScreenAirTemp|default('N/A')|float|round(0)|int if day.maxScreenAirTemp is defined else 'N/A' }}°</span>
@@ -158,6 +162,14 @@
         .weather-icon {
             color: #fff;
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .weather-emoji {
+            font-size: 1.6rem;
+            display: inline-block;
+            line-height: 1;
+            animation: float 3s ease-in-out infinite, pop 2.2s ease-in-out infinite;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.35);
         }
         
         .forecast-temps {

@@ -204,6 +204,10 @@
       }
       setTimeout(refreshBins, msUntilNextThursdayNight());
     </script>
+    <!-- Embed server weather map for client-side icon mapping -->
+    <script id="weather-map-data" type="application/json">{{ weather_map|tojson|safe }}</script>
+    <!-- Load local Skycons implementation for animated weather icons -->
+    <script src="/static/skycons.js"></script>
     <!-- Load external dashboard JS -->
     <script id="news-events-data" type="application/json">{{ news_items|tojson|safe }}</script>
     <script>
@@ -211,6 +215,103 @@
       window.newsEvents = newsEventsData ? JSON.parse(newsEventsData.textContent || '[]') : [];
     </script>
     <script src="/static/dashboard.js"></script>
+    <script>
+      // Initialize Skycons for any canvas with class .skycon-canvas
+      (function() {
+        function mapCodeToSkycon(code) {
+          const c = String(code);
+          const thunder = ['28','29','30'];
+          const snow = ['22','23','24','25','26','27'];
+          const sleet = ['16','17','18'];
+          const rain = ['9','10','11','12','13','14','15'];
+          const fog = ['5','6'];
+          const cloudy = ['7','8'];
+          const partly_day = ['3','10'];
+          const partly_night = ['2','9'];
+          if (c === '0') return 'CLEAR_NIGHT';
+          if (c === '1') return 'CLEAR_DAY';
+          if (partly_day.includes(c)) return 'PARTLY_CLOUDY_DAY';
+          if (partly_night.includes(c)) return 'PARTLY_CLOUDY_NIGHT';
+          if (cloudy.includes(c)) return 'CLOUDY';
+          if (fog.includes(c)) return 'FOG';
+          if (rain.includes(c)) return 'RAIN';
+          if (sleet.includes(c)) return 'SLEET';
+          if (snow.includes(c)) return 'SNOW';
+          if (thunder.includes(c)) return 'SLEET';
+          return 'CLOUDY';
+        }
+
+        function initSkycons(root) {
+          try {
+            const weatherMapEl = document.getElementById('weather-map-data');
+            let weatherMap = {};
+            try { weatherMap = weatherMapEl ? JSON.parse(weatherMapEl.textContent || '{}') : {}; } catch (e) { weatherMap = {}; }
+
+            const canvases = (root || document).querySelectorAll('.skycon-canvas');
+
+            // If Skycons library isn't loaded, replace canvases with emoji fallbacks
+            if (typeof Skycons === 'undefined') {
+              canvases.forEach(c => {
+                const code = c.getAttribute('data-weather-code') || '';
+                const sym = (weatherMap && weatherMap[code] && weatherMap[code].symbol) ? weatherMap[code].symbol : '❓';
+                const span = document.createElement('span');
+                span.className = 'weather-icon weather-emoji';
+                span.textContent = sym;
+                c.replaceWith(span);
+              });
+              return;
+            }
+
+            const skycons = new Skycons({ monochrome: false, colors: { 
+                rain: '#4a9eff',
+                cloud: '#888888',
+                dark_cloud: '#444444',
+                snow: '#ffffff',
+                sleet: '#ffffff',
+                moon: '#ffffff',
+                light_cloud: '#ffffff',
+                lightning: '#FFD700',
+                sun: '#FFD700',
+                fog: '#CCCCCC',
+                thunder: '#aaaaaa'
+              } });
+
+            canvases.forEach(c => {
+              const code = c.getAttribute('data-weather-code') || '';
+              const iconName = mapCodeToSkycon(code);
+              if (Skycons[iconName]) {
+                skycons.add(c, Skycons[iconName]);
+              } else {
+                const sym = (weatherMap && weatherMap[code] && weatherMap[code].symbol) ? weatherMap[code].symbol : '❓';
+                const span = document.createElement('span');
+                span.className = 'weather-icon weather-emoji';
+                span.textContent = sym;
+                c.replaceWith(span);
+              }
+            });
+            skycons.play();
+          } catch (e) {
+            console.warn('Skycons init failed', e);
+          }
+        }
+
+        // Initial run
+        setTimeout(() => initSkycons(document), 300);
+
+        // Re-run when fragments are injected
+        const mo = new MutationObserver((mutations) => {
+          for (const m of mutations) {
+            if (!m.addedNodes) continue;
+            for (const node of m.addedNodes) {
+              if (node && node.querySelectorAll && node.querySelectorAll('.skycon-canvas').length) {
+                setTimeout(() => initSkycons(node), 200);
+              }
+            }
+          }
+        });
+        mo.observe(document.body, { childList: true, subtree: true });
+      })();
+    </script>
     <style>
       .hide-cursor {
       cursor: none;
