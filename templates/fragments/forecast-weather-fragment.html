@@ -164,18 +164,15 @@
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
+        .weather-icon {
+            color: #fff;
+        }
+
         .weather-emoji {
             font-size: 1.6rem;
             display: inline-block;
             line-height: 1;
-            animation: float 3s ease-in-out infinite, pop 2.2s ease-in-out infinite;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.35);
         }
-        
-        .forecast-temps {
-            font-weight: 600;
-            min-width: 70px;
-            font-size: 1.05rem;
         }
         
         .temp-high {
@@ -207,10 +204,7 @@
             font-weight: 600;
         }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
+        
     </style>
 {% else %}
     <div class="weather-error">Forecast data not available.</div>
