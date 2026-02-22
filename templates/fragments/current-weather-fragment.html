@@ -9,7 +9,17 @@
             <div class="weather-large" style="display:flex; align-items:center; gap:0.4rem; flex:1;">
                 <div class="weather-icon-container">
                     {% set code = pirate_weather.significantWeatherCode|string %}
-                    <canvas class="skycon-canvas" width="64" height="64" data-weather-code="{{ code }}"></canvas>
+                    {# derive icon filename from config mapping (strip leading "bi-" prefix) #}
+                    {% set icon_name = 'unknown' %}
+                    {% if code in weather_map %}
+                        {% set raw_icon = weather_map[code].icon %}
+                        {% if raw_icon is defined and raw_icon[:3] == 'bi-' %}
+                            {% set icon_name = raw_icon[3:] %}
+                        {% elif raw_icon is defined %}
+                            {% set icon_name = raw_icon %}
+                        {% endif %}
+                    {% endif %}
+                    <img class="weather-svg" src="/static/icons/{{ icon_name }}.svg" width="64" height="64" alt="{{ weather_map[code].desc if code in weather_map else 'Weather' }}">
                     <noscript>
                         <span class="weather-icon weather-emoji">{{ weather_map[code].symbol if code in weather_map else '❓' }}</span>
                     </noscript>

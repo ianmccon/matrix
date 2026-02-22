@@ -40,7 +40,17 @@
                     </td>
                     <td class="forecast-icon">
                         {% set dcode = day.significantWeatherCode|string %}
-                        <canvas class="skycon-canvas" width="40" height="40" data-weather-code="{{ dcode }}"></canvas>
+                        {# derive icon filename from config mapping (strip leading "bi-" prefix) #}
+                        {% set icon_name = 'unknown' %}
+                        {% if dcode in weather_map %}
+                            {% set raw_icon = weather_map[dcode].icon %}
+                            {% if raw_icon is defined and raw_icon[:3] == 'bi-' %}
+                                {% set icon_name = raw_icon[3:] %}
+                            {% elif raw_icon is defined %}
+                                {% set icon_name = raw_icon %}
+                            {% endif %}
+                        {% endif %}
+                        <img class="weather-svg" src="/static/icons/{{ icon_name }}.svg" width="40" height="40" alt="{{ weather_map[dcode].desc if dcode in weather_map else 'Weather' }}">
                         <noscript>
                             <span class="weather-icon weather-emoji">{{ weather_map[dcode].symbol if dcode in weather_map else '❓' }}</span>
                         </noscript>
@@ -161,18 +171,12 @@
         
         .weather-icon {
             color: #fff;
-            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        .weather-icon {
-            color: #fff;
         }
 
         .weather-emoji {
             font-size: 1.6rem;
             display: inline-block;
             line-height: 1;
-        }
         }
         
         .temp-high {
