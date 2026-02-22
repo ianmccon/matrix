@@ -8,21 +8,39 @@ import datetime
 import os
 import requests
 from collections import defaultdict
+from bus_departures import get_departures_for_stop
 # --- CONFIG ---
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_matrix.json')
 with open(CONFIG_PATH) as f:
     config = json.load(f)
 
-METOFFICE_API_KEY = config["METOFFICE_API_KEY"]
 WEATHER_LOCATION = config["WEATHER_LOCATION"]
 WEATHER_LATITUDE = config["WEATHER_LATITUDE"]
 WEATHER_LONGITUDE = config["WEATHER_LONGITUDE"]
 FASTMAIL_CALENDARS = config["FASTMAIL_CALENDARS"]
 WEATHER_MAP = config["WEATHER_MAP"]
+PIRATEWEATHER_API_KEY = config.get("PIRATEWEATHER_API_KEY", "")
+# Todoist API key (Personal project)
+TODOIST_API_KEY = 'ce6e344c9815d4a39bfcc3533254d046dfdf1c2b'
 
 app = Flask(__name__)
 
 now = datetime.datetime.now()
+
+# Helper function to convert wind bearing (degrees) to compass direction
+def bearing_to_direction(bearing):
+    """Convert wind bearing in degrees to compass direction (N, NE, E, etc.)"""
+    if bearing is None:
+        return ""
+    bearing = float(bearing)
+    directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 
+                  'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
+    index = round(bearing / 22.5) % 16
+    return directions[index]
+
+# Register the filter for use in templates
+app.jinja_env.filters['bearing_to_direction'] = bearing_to_direction
+
 # --- Scaffolded data fetchers ---
 def get_events():
     all_events = []
@@ -44,101 +62,116 @@ def get_events():
     all_events.sort(key=event_dt_as_datetime)
     return all_events
 
-def get_bus_departures():
-    url = f"https://lothianapi.co.uk/departureBoards/website?stops=6280325770"
-    try:
-        resp = requests.get(url, timeout=5)
-        if resp.status_code == 200:
-            data = resp.json()
-            service_map = defaultdict(list)
-            for service in data.get("services", []):
-                service_name = service.get("service_name", "?")
-                for dep in service.get("departures", []):
-                    # Use the service name from the service object
-                    time = dep.get("departure_time", "?")
-                    dest = dep.get("destination", "?")
-                    service_map[service_name].append({"time": time, "destination": dest})
-
-            # Only keep next 3 for each service
-            bus_departures = []
-            for service, times in service_map.items():
-                bus_departures.append({
-                    "service": service,
-                    "departures": times
-                })
-            return bus_departures
-        else:
-            return None
-    except Exception:
-        return None
-
-def get_weather_data():
-    # Try to read from cache file written by Celery
-    import os
-    import json
-    cache_path = os.path.join(os.path.dirname(__file__), 'weather_cache.json')
-    if os.path.exists(cache_path):
-        try:
-            with open(cache_path, 'r') as f:
-                cache = json.load(f)
-            current_weather = cache.get('current_weather')
-            forecast_days = cache.get('forecast_days')
-            # If cache is valid, return it
-            if current_weather and forecast_days:
-                return (current_weather, forecast_days)
-        except Exception as e:
-            print('Error reading weather cache:', e)
-            # fallback to live fetch below
-    # Fallback: fetch live from Met Office
+def get_pirate_weather_data():
+    """Fetch weather data from PirateWeather API (alternative provider)"""
+    if not PIRATEWEATHER_API_KEY:
+        print('PirateWeather API key not configured')
+        return (None, None, None, None)
+    
     lat = WEATHER_LATITUDE
     lon = WEATHER_LONGITUDE
-    api_key = METOFFICE_API_KEY
-    base_url = "https://data.hub.api.metoffice.gov.uk/sitespecific/v0/point/three-hourly"
-    url = f"{base_url}?includeLocationName=true&latitude={lat}&longitude={lon}"
-    headers = {
-        "apikey": api_key,
-        "accept": "application/json"
+    url = f"https://api.pirateweather.net/forecast/{PIRATEWEATHER_API_KEY}/{lat},{lon}"
+    params = {
+        'units': 'uk2'  # UK units: Celsius, m/s
     }
+    
     try:
-        resp = requests.get(url, headers=headers)
+        resp = requests.get(url, params=params, timeout=10)
         if resp.status_code != 200:
-            print('Met Office weather fetch failed:', resp.text)
-            return (None, None)
+            print('PirateWeather API fetch failed:', resp.text)
+            return (None, None, None, None)
+        
         data = resp.json()
-        features = data.get('features', [])
-        if not features:
-            print('No weather data returned from Met Office')
+        
+        # Extract summaries
+        hourly_summary = data.get('hourly', {}).get('summary', '')
+        daily_summary = data.get('daily', {}).get('summary', '')
+        
+        # Current weather from 'currently' block
+        currently = data.get('currently', {})
+        if not currently:
+            print('No current weather data from PirateWeather')
+            return (None, None, None, None, None)
+        
+        # Convert PirateWeather response to Met Office-like format for template compatibility
+        # Convert Unix timestamp to ISO8601 string
+        current_time = datetime.datetime.utcfromtimestamp(currently.get('time', 0))
+        iso_time = current_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        
+        # Map icon to significantWeatherCode (0-30)
+        icon_to_code = {
+            'clear-day': '1',
+            'clear-night': '0',
+            'partly-cloudy-day': '3',
+            'partly-cloudy-night': '2',
+            'cloudy': '7',
+            'rain': '12',
+            'sleet': '18',
+            'snow': '24',
+            'wind': '8',
+            'fog': '6',
+            'hail': '20',
+            'thunderstorm': '30'
+        }
+        icon = currently.get('icon', 'cloudy')
+        weather_code = icon_to_code.get(icon, '8')
+        
+        current = {
+            'time': iso_time,
+            'significantWeatherCode': int(weather_code),
+            'icon': icon,
+            'maxScreenAirTemp': currently.get('temperature'),
+            'feelsLikeTemperature': currently.get('apparentTemperature'),
+            'probOfPrecipitation': int(currently.get('precipProbability', 0) * 100),
+            'windSpeed': currently.get('windSpeed'),
+            'windGust': currently.get('windGust'),
+            'windBearing': currently.get('windBearing'),
+            'visibility': currently.get('visibility'),
+            'pressure': currently.get('pressure'),
+            'dewPoint': currently.get('dewPoint'),
+            'summary': currently.get('summary', '')
+        }
+        
+        # Forecast: next 7 days from 'daily' data
+        daily_data = data.get('daily', {}).get('data', [])
+        if not daily_data:
+            print('No daily forecast data from PirateWeather')
             return (None, None)
-        properties = features[0].get('properties', {})
-        periods = properties.get('timeSeries', [])
-        if not periods:
-            print('No timeSeries data in Met Office response')
-            return (None, None)
-        # Current weather: first period
-        current = periods[0]
-        # Forecast: next 7 days (group by date)
-        from collections import OrderedDict
-        forecast_days_dict = OrderedDict()
-        for period in periods:
-            dt = datetime.datetime.fromisoformat(period['time'][:-1])  # Remove 'Z'
-            day_key = dt.date()
-            # Use the first period for each day as the day's forecast
-            if day_key not in forecast_days_dict:
-                forecast_days_dict[day_key] = period
-            if len(forecast_days_dict) >= 7:
-                break
-        forecast = list(forecast_days_dict.values())
+        
         forecast_days = []
-        if forecast:
-            for day in forecast:
-                # Met Office periods use ISO8601 string in 'time', not 'dt'
-                dt = datetime.datetime.fromisoformat(day['time'][:-1])  # Remove 'Z'
-                weekday = dt.strftime('%a')
-                forecast_days.append((day, weekday))
-        return (current, forecast_days)
+        for day in daily_data[:7]:
+            dt = datetime.datetime.utcfromtimestamp(day['time'])
+            weekday = dt.strftime('%a')
+            
+            # Convert daily data to Met Office-like format
+            day_iso_time = dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+            day_icon = day.get('icon', 'cloudy')
+            day_weather_code = icon_to_code.get(day_icon, '8')
+            
+            day_data = {
+                'time': day_iso_time,
+                'significantWeatherCode': int(day_weather_code),
+                'icon': day_icon,
+                'maxScreenAirTemp': day.get('temperatureMax'),
+                'minScreenAirTemp': day.get('temperatureMin'),
+                'feelsLikeTemperature': day.get('apparentTemperatureMax'),
+                'probOfPrecipitation': int(day.get('precipProbability', 0) * 100),
+                'windSpeed': day.get('windSpeed'),
+                'windGust': day.get('windGust'),
+                'windBearing': day.get('windBearing'),
+                'humidity': int(day.get('humidity', 0) * 100),
+                'visibility': day.get('visibility'),
+                'cloudCover': int(day.get('cloudCover', 0) * 100),
+                'summary': day.get('summary', '')
+            }
+            
+            forecast_days.append((day_data, weekday))
+        
+        return (current, forecast_days, hourly_summary, daily_summary)
+    
     except Exception as e:
-        print('Error fetching weather:', e)
-        return (None, None)
+        print('Error fetching weather from PirateWeather:', e)
+        return (None, None, None, None)
 
 def get_news_items():
     newsfeed_url = "http://feeds.bbci.co.uk/news/scotland/rss.xml"
@@ -146,10 +179,26 @@ def get_news_items():
     news_items = []
     if newsfeed and 'entries' in newsfeed:
         for entry in newsfeed.entries[:8]:
+            # Try to extract published time if available
+            pub_iso = None
+            try:
+                if 'published_parsed' in entry and entry.published_parsed:
+                    dt = datetime.datetime(*entry.published_parsed[:6], tzinfo=datetime.timezone.utc)
+                    pub_iso = dt.isoformat()
+                elif 'updated_parsed' in entry and entry.updated_parsed:
+                    dt = datetime.datetime(*entry.updated_parsed[:6], tzinfo=datetime.timezone.utc)
+                    pub_iso = dt.isoformat()
+                elif 'published' in entry:
+                    # fallback to raw string
+                    pub_iso = entry.get('published')
+            except Exception:
+                pub_iso = None
+
             news_items.append({
                 'title': entry.title,
                 'link': entry.link,
-                'summary': entry.summary
+                'summary': entry.summary,
+                'published': pub_iso
             })
     return news_items
 
@@ -157,32 +206,145 @@ def get_news_items():
 @app.route('/events-fragment')
 def events_fragment():
     events = get_events()
-    return render_template('fragments/events_fragment.html', events=events)
+    # Annotate each event with a display string for date/time (Today/Tomorrow handling)
+    now_dt = datetime.datetime.now()
+    tomorrow_date = (now_dt + datetime.timedelta(days=1)).date()
 
-# Helper: render just the bus times block
-@app.route('/buses-fragment')
-def buses_fragment():
-    bus_departures = get_bus_departures()  # Adjust to your actual logic
-    all_deps = []
-    for bus in bus_departures:
-        for dep in bus['departures'][:2]:
-            all_deps.append({'service': bus['service'], 'destination': dep['destination'], 'time': dep['time']})
-    sorted_deps = sorted(all_deps, key=lambda d: d['time'])
-    return render_template('fragments/buses_fragment.html', sorted_deps=sorted_deps)
+    def day_suffix(day):
+        if day in (1, 21, 31):
+            return 'st'
+        if day in (2, 22):
+            return 'nd'
+        if day in (3, 23):
+            return 'rd'
+        return 'th'
+
+    for e in events:
+        dt = e.get('dt')
+        display = ''
+        try:
+            if isinstance(dt, datetime.datetime):
+                adt = dt
+                if adt.tzinfo is not None:
+                    adt = adt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+                # helper: compact time like '9AM' or '9:05AM'
+                try:
+                    hour = adt.strftime('%-I')
+                except Exception:
+                    hour = adt.strftime('%I').lstrip('0')
+                minute = adt.strftime('%M')
+                ampm = adt.strftime('%p')
+                if minute == '00':
+                    time_compact = f"{hour}{ampm}"
+                else:
+                    time_compact = f"{hour}:{minute}{ampm}"
+
+                if adt.date() == now_dt.date():
+                    # Show relative time until the event in hours and minutes (e.g. 3h 40m)
+                    delta = adt - now_dt
+                    secs = int(delta.total_seconds())
+                    if secs <= 0:
+                        time_text = "0h 0m"
+                    else:
+                        hours = secs // 3600
+                        minutes = (secs % 3600) // 60
+                        time_text = f"{hours}h {minutes}m"
+                    display = f"Today in {time_text} - {time_compact}"
+                elif adt.date() == tomorrow_date:
+                    display = f"Tomorrow - {time_compact}"
+                else:
+                    display = f"{adt.strftime('%B')} {adt.day}{day_suffix(adt.day)} - {time_compact}"
+            elif isinstance(dt, datetime.date):
+                if dt == now_dt.date():
+                    display = 'Today'
+                elif dt == tomorrow_date:
+                    display = 'Tomorrow'
+                else:
+                    display = f"{dt.strftime('%B')} {dt.day}{day_suffix(dt.day)}"
+        except Exception:
+            display = ''
+        e['display_date'] = display
+
+    return render_template('fragments/events-fragment.html', events=events, now=now_dt)
 
 # Helper: render just the weather column
 @app.route('/weather-fragment')
 def weather_fragment():
-    current_weather, forecast_days = get_weather_data()
-    if current_weather is None or forecast_days is None:
-        return render_template('fragments/weather_fragment.html', current_weather=None, forecast_days=None)
-    return render_template('fragments/weather_fragment.html', current_weather=current_weather, forecast_days=forecast_days)
+    pirate_weather, pirate_forecast, hourly_summary, daily_summary = get_pirate_weather_data()
+    
+    return render_template('fragments/weather_fragment.html', 
+                         pirate_weather=pirate_weather,
+                         pirate_forecast=pirate_forecast,
+                         hourly_summary=hourly_summary,
+                         daily_summary=daily_summary,
+                         weather_map=WEATHER_MAP)
+
+
+@app.route('/buses-fragment')
+def buses_fragment():
+    """Return the buses fragment for a configured stop (6280325770 by default)."""
+    stop_id = getattr(app, 'BUS_STOP_ID', None) or '6280325770'
+    try:
+        deps = get_departures_for_stop(stop_id)
+    except Exception:
+        deps = []
+    # Template expects `sorted_deps` variable
+    return render_template('fragments/buses-fragment.html', sorted_deps=deps)
+
+# Separate AJAX endpoints for individual weather fragments
+@app.route('/current-weather-fragment')
+def current_weather_fragment():
+    pirate_weather, _, _, _ = get_pirate_weather_data()
+    
+    return render_template('fragments/current-weather-fragment.html',
+                         pirate_weather=pirate_weather,
+                         weather_map=WEATHER_MAP)
+
+@app.route('/forecast-weather-fragment')
+def forecast_weather_fragment():
+    _, pirate_forecast, hourly_summary, daily_summary = get_pirate_weather_data()
+    
+    return render_template('fragments/forecast-weather-fragment.html',
+                         pirate_forecast=pirate_forecast,
+                         hourly_summary=hourly_summary,
+                         daily_summary=daily_summary,
+                         weather_map=WEATHER_MAP)
 
 # Helper: render just the news ticker
 @app.route('/news-fragment')
 def news_fragment():
-    news_items = get_news_items()  # Adjust to your actual logic
-    return render_template('fragments/news_fragment.html', news_items=news_items)
+    news_items = get_news_items()
+    # Compute initial age string for the first news item (used in header)
+    initial_age = ''
+    try:
+        if news_items and news_items[0].get('published'):
+            pub = news_items[0].get('published')
+            try:
+                pub_dt = datetime.datetime.fromisoformat(pub)
+            except Exception:
+                # try parsing common formats
+                pub_dt = None
+            if pub_dt is not None:
+                now_dt = datetime.datetime.now(datetime.timezone.utc)
+                diff = now_dt - pub_dt
+                hours = int(diff.total_seconds() // 3600)
+                if hours <= 0:
+                    initial_age = 'Less than 1 Hour ago'
+                elif hours == 1:
+                    initial_age = '1 Hour ago'
+                else:
+                    initial_age = f"{hours} Hours ago"
+    except Exception:
+        initial_age = ''
+
+    return render_template('fragments/news-fragment.html', news_items=news_items, initial_news_age=initial_age)
+
+
+# Helper: render just the Todoist list
+@app.route('/todoist-fragment')
+def todoist_fragment():
+    tasks = get_todoist_tasks()
+    return render_template('fragments/todoist-fragment.html', tasks=tasks, now=datetime.datetime.now())
 
 
 
@@ -224,6 +386,89 @@ def get_this_week_bins():
     }
 
 
+def get_todoist_tasks():
+    """Fetch tasks using the Todoist sync API v1 and return tasks from
+    the 'Personal' and 'Shopping' projects (case-insensitive).
+    Uses `sync_token='*'` and `resource_types='["all"]'` as per the sync API example.
+    """
+    if not TODOIST_API_KEY:
+        return []
+    headers = {
+        'Authorization': f'Bearer {TODOIST_API_KEY}'
+    }
+    data = {
+        'sync_token': '*',
+        'resource_types': '["all"]'
+    }
+    try:
+        resp = requests.post('https://api.todoist.com/api/v1/sync', headers=headers, data=data, timeout=15)
+        if resp.status_code != 200:
+            return []
+        payload = resp.json()
+        projects = payload.get('projects', []) or []
+        items = payload.get('items', []) or []
+
+        # Find the 'Personal' project only (case-insensitive)
+        personal = None
+        for p in projects:
+            if p.get('name', '').lower() == 'personal':
+                personal = p
+                break
+
+        if personal is None:
+            return []
+
+        personal_id = personal.get('id')
+
+        # Helper: map project name to a CSS color
+        def project_color(name):
+            n = (name or '').lower()
+            if 'personal' in n:
+                return '#1f77b4'
+            return '#888888'
+
+        # Helper to format due date
+        def format_due(due):
+            if not due:
+                return ''
+            date_str = due.get('date') or due.get('datetime')
+            if not date_str:
+                return ''
+            try:
+                if len(date_str) == 10:
+                    return date_str
+                ds = date_str.replace('Z', '+00:00')
+                dt = datetime.datetime.fromisoformat(ds)
+                return dt.strftime('%Y-%m-%d %H:%M')
+            except Exception:
+                return date_str
+
+        # Build the personal project info
+        project_info = {
+            'id': personal_id,
+            'name': personal.get('name'),
+            'color': project_color(personal.get('name')),
+            'tasks': []
+        }
+
+        # Collect tasks for personal project
+        for it in items:
+            if it.get('project_id') == personal_id:
+                task = {
+                    'content': it.get('content'),
+                    'due': format_due(it.get('due')),
+                    'id': it.get('id')
+                }
+                project_info['tasks'].append(task)
+
+        # Sort tasks by due
+        project_info['tasks'].sort(key=lambda t: (t['due'] == '', t['due']))
+
+        return [project_info]
+    except Exception:
+        return []
+
+
 if app is None:
     app = Flask(__name__)
 
@@ -258,12 +503,9 @@ def index():
     news_items = get_news_items()
     # Current time
     now = datetime.datetime.now()
-    # Fetch current weather and forecast
-
-    current_weather, forecast_days = get_weather_data()
-    # Prepare weekday names for forecast
     
-    
+    # Fetch weather
+    pirate_weather, pirate_forecast, hourly_summary, daily_summary = get_pirate_weather_data()
     
     def datetimeformat(ts):
         # Accepts either a UNIX timestamp or ISO8601 string
@@ -274,19 +516,89 @@ def index():
             return datetime.datetime.fromisoformat(ts[:-1]).strftime('%H:%M')
         except Exception:
             return str(ts)
+    
     all_events = get_events()
-    bus_departures = get_bus_departures()
+    # Annotate events with display strings for initial page load (Today/Tomorrow handling)
+    now_dt = datetime.datetime.now()
+    tomorrow_date = (now_dt + datetime.timedelta(days=1)).date()
+
+    def day_suffix(day):
+        if day in (1, 21, 31):
+            return 'st'
+        if day in (2, 22):
+            return 'nd'
+        if day in (3, 23):
+            return 'rd'
+        return 'th'
+
+    for e in all_events:
+        dt = e.get('dt')
+        display = ''
+        try:
+            if isinstance(dt, datetime.datetime):
+                adt = dt
+                if adt.tzinfo is not None:
+                    adt = adt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+                # build compact time (e.g. 9AM or 9:05AM) so it's available for all branches
+                try:
+                    hour = adt.strftime('%-I')
+                except Exception:
+                    hour = adt.strftime('%I').lstrip('0')
+                minute = adt.strftime('%M')
+                ampm = adt.strftime('%p')
+                if minute == '00':
+                    time_compact = f"{hour}{ampm}"
+                else:
+                    time_compact = f"{hour}:{minute}{ampm}"
+
+                if adt.date() == now_dt.date():
+                    # Show relative time until the event in hours and minutes (e.g. 3h 40m)
+                    delta = adt - now_dt
+                    secs = int(delta.total_seconds())
+                    if secs <= 0:
+                        time_text = "0h 0m"
+                    else:
+                        hours = secs // 3600
+                        minutes = (secs % 3600) // 60
+                        time_text = f"{hours}h {minutes}m"
+                    display = f"Today in {time_text} - {time_compact}"
+                elif adt.date() == tomorrow_date:
+                    display = f"Tomorrow - {time_compact}"
+                else:
+                    display = f"{adt.strftime('%B')} {adt.day}{day_suffix(adt.day)} - {time_compact}"
+            elif isinstance(dt, datetime.date):
+                if dt == now_dt.date():
+                    display = 'Today'
+                elif dt == tomorrow_date:
+                    display = 'Tomorrow'
+                else:
+                    display = f"{dt.strftime('%B')} {dt.day}{day_suffix(dt.day)}"
+        except Exception:
+            display = ''
+        e['display_date'] = display
+    # Fetch Todoist tasks for initial render
+    todoist_tasks = get_todoist_tasks()
+        # Fetch bus departures for initial render (stop configurable via app.BUS_STOP_ID)
+    try:
+        stop_id = getattr(app, 'BUS_STOP_ID', None) or '6280325770'
+        sorted_deps = get_departures_for_stop(stop_id)
+    except Exception:
+        sorted_deps = []
+
     return render_template(
         'index.html',
         events=all_events,
         now=now,
-        current_weather=current_weather,
-        forecast_days=forecast_days,
+        pirate_weather=pirate_weather,
+        pirate_forecast=pirate_forecast,
+        hourly_summary=hourly_summary,
+        daily_summary=daily_summary,
         datetimeformat=datetimeformat,
         news_items=news_items,
         bin_info=bin_info,
-        bus_departures=bus_departures,
         weather_map=WEATHER_MAP,
+        todoist_tasks=todoist_tasks,
+            sorted_deps=sorted_deps,
     )
 
 if __name__ == '__main__':

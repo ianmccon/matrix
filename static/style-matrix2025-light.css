@@ -9,7 +9,7 @@ html, body {
     height: 100%;
 }
 body::-webkit-scrollbar, html::-webkit-scrollbar, *::-webkit-scrollbar {
-    display: none;
+         color: #FFD700;
 }
 body, html, * {
     scrollbar-width: none;
@@ -29,7 +29,7 @@ body {
     gap: 30px;
     justify-content: center;
     align-items: stretch;
-    flex-direction: row;
+         color: #FFD700;
 }
 .col {
     flex: 1;
@@ -40,6 +40,20 @@ body {
     border-radius: 18px;
     box-shadow: 0 6px 32px 0 rgba(0,0,0,0.08), 0 1.5px 6px 0 rgba(0,0,0,0.04);
     transition: box-shadow 0.2s;
+    order: 0;
+         color: #FFD700;
+/* Center column - middle */
+.col.center {
+    order: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+/* Force weather section to appear last (right column) */
+#weather-section.col {
+    order: 2;
+    overflow-y: auto;
 }
 .col:hover {
     box-shadow: 0 12px 40px 0 rgba(0,180,255,0.10), 0 2px 8px 0 rgba(0,180,255,0.07);
@@ -181,21 +195,21 @@ body {
     align-items: flex-end;
 }
 .weather-temp {
-    font-size: 3em;
+    font-size: 2.2em;
     font-weight: bold;
     color: #1e88e5;
 }
 .weather-desc {
-    font-size: 1.28em;
+    font-size: 1.0em;
     color: #23272b;
     margin-bottom: 0.2em;
 }
 .weather-feels {
-    font-size: 1.15em;
+    font-size: 0.95em;
     color: #23272b;
 }
 .weather-rain {
-    font-size: 1.15em;
+    font-size: 0.95em;
     color: #23272b;
 }
 /* Forecast table styling */
@@ -217,8 +231,8 @@ body {
     background: #fffbe6;
 }
 .forecast-icon img {
-    width: 40px;
-    height: 40px;
+    width: 35px;
+    height: 35px;
 }
 .forecast-temp-high {
     padding: 0.5em;
@@ -247,10 +261,10 @@ body {
     padding-right: 10px;
 }
 .news-title {
-    font-size: 1.5em;
-    font-weight: 600;
+    font-size: 1.6em;
+    font-weight: 700;
     color: #1e88e5;
-    margin-bottom: 0.5em;
+    margin-bottom: 0.35em;
     text-align: center;
     white-space: nowrap;
     overflow: hidden;
@@ -266,9 +280,9 @@ body {
     color: #23272b;
     z-index: 100;
     box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
-    padding: 0.9em 0 0.9em 2.2em;
-    font-size: 1.22em;
-    min-height: 3.5em;
+    padding: 1.2em 0 1.2em 2.2em;
+    font-size: 1.2em;
+    min-height: 5.5em;
     letter-spacing: 0.01em;
     display: flex;
     align-items: center;

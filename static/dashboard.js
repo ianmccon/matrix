@@ -3,8 +3,8 @@ function updateClock() {
     const now = new Date();
     let h = now.getHours().toString().padStart(2, '0');
     let m = now.getMinutes().toString().padStart(2, '0');
-    let dayOfWeek = now.toLocaleString('en-US', { weekday: 'short' });
-    let month = now.toLocaleString('en-US', { month: 'short' });
+    let dayOfWeek = now.toLocaleString('en-US', { weekday: 'long' });
+    let month = now.toLocaleString('en-US', { month: 'long' });
     let date = now.getDate();
     let year = now.getFullYear();
     let formattedDate = `${dayOfWeek}, ${month} ${date}, ${year}`;
@@ -32,6 +32,18 @@ function setupNewsTickerFromTemplate() {
         const item = window.newsEvents[idx];
         titleElem.textContent = item.title;
         summaryElem.textContent = item.summary || '';
+        const timeElem = document.getElementById('news-time');
+        if (timeElem) timeElem.textContent = formatHoursAgo(item.published);
+    }
+    function formatHoursAgo(published) {
+        if (!published) return '';
+        const pub = new Date(published);
+        if (isNaN(pub.getTime())) return '';
+        const diffMs = Date.now() - pub.getTime();
+        const hours = Math.floor(diffMs / 3600000);
+        if (hours <= 0) return 'Less than 1 Hour ago';
+        if (hours === 1) return '1 Hour ago';
+        return `${hours} Hours ago`;
     }
     function startTicker() {
         if (tickerInterval) clearInterval(tickerInterval);

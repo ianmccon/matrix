@@ -27,6 +27,20 @@ body {
     border-radius: 18px;
     box-shadow: 0 6px 32px 0 rgba(60,60,120,0.13), 0 1.5px 6px 0 rgba(60,60,120,0.07);
     transition: box-shadow 0.2s;
+    order: 0;
+}
+/* Center column - middle */
+.col.center {
+    order: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+/* Force weather section to appear last (right column) */
+#weather-section.col {
+    order: 2;
+    overflow-y: auto;
 }
 .col:hover {
     box-shadow: 0 12px 40px 0 rgba(60,60,120,0.18), 0 2px 8px 0 rgba(60,60,120,0.10);
@@ -50,9 +64,10 @@ body {
 .events-list li:last-child {
     border-bottom: none;
 }
+
 .weather-icon {
-    width: 100px;
-    height: 100px;
+    width: 70px;
+    height: 70px;
     filter: drop-shadow(0 2px 8px #b3c6ff);
 }
 .forecast {
@@ -61,22 +76,24 @@ body {
 .center {
     text-align: center;
 }
-.upload-form {
-    margin-bottom: 20px;
-}
 #newsfeed-container {
     font-family: 'Montserrat', Arial, sans-serif;
     padding: 0.2em 1.5em;
 }
+#news-title {
+    color: #FFD700;
+    font-weight: 700;
+    font-size: 1.13em;
+}
 #newsfeed-headline a {
     color: #fff;
     text-shadow: 0 2px 8px #000, 0 1px 0 #444;
-    font-size: 1.13em;
+    font-size: 1.4em;
     letter-spacing: 0.01em;
 }
 #newsfeed-summary {
     color: #e0e0e0;
-    font-size: 1em;
+    font-size: 1.25em;
     margin-top: 0.3em;
     max-width: 90vw;
     text-shadow: 0 1px 2px #111;

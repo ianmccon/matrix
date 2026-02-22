@@ -1,0 +1,37 @@
+<div class="todoist-section">
+    <div class="forecast-title">
+        <span style="float:left;">Tasks</span>
+        <span class="last-refreshed" style="float:right; font-weight:400; font-size:0.9em;">Updated: {{ now.strftime('%H:%M') }}</span>
+        <div style="clear:both;"></div>
+    </div>
+    <div class="todo-list">
+        {% if tasks and tasks|length > 0 %}
+            {% for project in tasks %}
+                <div class="todo-project">
+                    {% if project.tasks and project.tasks|length > 0 %}
+                        <table class="todo-table" style="width:100%; border-collapse:collapse; margin-bottom:0.5em;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; padding:6px;"></th>
+                                    <th style="text-align:left; padding:6px; width:140px;">Due</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for t in project.tasks %}
+                                    <tr>
+                                        <td style="padding:8px; color:#ffffff; text-align:left; font-size:1.05em;">{{ t.content }}</td>
+                                        <td style="padding:8px; color: #444; text-align:left; font-size:0.95em;">{{ t.due }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="todo-empty">No tasks in this project.</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="todo-empty">No Todoist tasks found.</div>
+        {% endif %}
+    </div>
+</div>

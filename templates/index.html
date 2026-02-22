@@ -12,39 +12,137 @@
     <link href="https://fonts.cdnfonts.com/css/digital-7-Mono" rel="stylesheet">
     <script>
       // Dashboard section refresh intervals (in ms)
-      const REFRESH_EVENTS = 10 * 60 * 1000;   // 10 mins
-      const REFRESH_BUSES = 5 * 60 * 1000;     // 5 mins
+      const REFRESH_EVENTS = 1 * 60 * 1000;   // 10 mins
       const REFRESH_CURRENT_WEATHER = 60 * 60 * 1000;  // 1 hour
       const REFRESH_FORECAST = 3 * 60 * 60 * 1000;     // 3 hours
       const REFRESH_NEWS = 60 * 60 * 1000;     // 1 hour
 
       // Helper: fetch and update a section
       async function fetchAndUpdate(url, targetSelector, onSuccess) {
+        const statusEl = document.getElementById('events-refresh-status');
         try {
           const resp = await fetch(url, {cache: 'no-store', dataType: 'jsonp'});
-          if (!resp.ok) return;
+          if (!resp.ok) {
+            console.warn('fetchAndUpdate: fetch failed', url, resp.status);
+            if (statusEl && targetSelector === '.events-list') {
+              statusEl.textContent = 'Events refresh failed: ' + resp.status;
+              statusEl.style.color = '#ff6b6b';
+            }
+            return;
+          }
           const html = await resp.text();
           if (onSuccess) {
             onSuccess(html);
-          } else {
-            document.querySelector(targetSelector).innerHTML = html;
+            if (statusEl && targetSelector === '.events-list') {
+              statusEl.textContent = 'Events refreshed (custom handler): ' + new Date().toLocaleTimeString();
+              statusEl.style.color = '#7fffd4';
+            }
+            return;
           }
-        } catch (e) { /* ignore */ }
+
+          // Parse the fetched HTML and extract the element matching targetSelector
+          try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newEl = doc.querySelector(targetSelector);
+            const targetEl = document.querySelector(targetSelector);
+            if (newEl && targetEl) {
+              targetEl.innerHTML = newEl.innerHTML;
+              console.debug('fetchAndUpdate: updated', targetSelector, 'from', url, new Date().toISOString());
+              if (statusEl && targetSelector === '.events-list') {
+                statusEl.textContent = 'Events refreshed: ' + new Date().toLocaleTimeString();
+                statusEl.style.color = '#7fffd4';
+              }
+                
+            } else if (targetEl) {
+              // Fallback: replace with whole response
+              targetEl.innerHTML = html;
+              console.debug('fetchAndUpdate: replaced innerHTML of', targetSelector, 'from', url);
+              if (statusEl && targetSelector === '.events-list') {
+                statusEl.textContent = 'Events refreshed (raw HTML): ' + new Date().toLocaleTimeString();
+                statusEl.style.color = '#ffd86b';
+              }
+            } else {
+              // If targetSelector not found in current document, try replacing the fragment root
+              const fetchedRoot = doc.body.firstElementChild;
+              if (fetchedRoot && fetchedRoot.classList && fetchedRoot.classList.length) {
+                let replaced = false;
+                for (const cls of fetchedRoot.classList) {
+                  const sel = '.' + cls.split(' ').join('.');
+                  const existing = document.querySelector(sel);
+                  if (existing) {
+                    existing.innerHTML = fetchedRoot.innerHTML;
+                    console.debug('fetchAndUpdate: replaced fragment', sel, 'from', url);
+                    replaced = true;
+                    if (statusEl && targetSelector === '.events-list') {
+                      statusEl.textContent = 'Events refreshed (fragment replaced): ' + new Date().toLocaleTimeString();
+                      statusEl.style.color = '#ffd86b';
+                    }
+                    break;
+                  }
+                }
+                if (!replaced) {
+                  console.warn('fetchAndUpdate: no matching target for', targetSelector, 'or fragment root from', url);
+                  if (statusEl && targetSelector === '.events-list') {
+                    statusEl.textContent = 'Events refresh: no matching fragment';
+                    statusEl.style.color = '#ffcc00';
+                  }
+                }
+              } else {
+                console.warn('fetchAndUpdate: no element to update for', targetSelector, 'from', url);
+                if (statusEl && targetSelector === '.events-list') {
+                  statusEl.textContent = 'Events refresh: nothing to update';
+                  statusEl.style.color = '#ffcc00';
+                }
+              }
+            }
+          } catch (parseErr) {
+            // If parsing fails, fall back to inserting raw HTML into target
+            const targetEl = document.querySelector(targetSelector);
+            if (targetEl) {
+              targetEl.innerHTML = html;
+              console.debug('fetchAndUpdate: parsing failed, inserted raw HTML into', targetSelector);
+              if (statusEl && targetSelector === '.events-list') {
+                statusEl.textContent = 'Events refreshed (parsing fallback): ' + new Date().toLocaleTimeString();
+                statusEl.style.color = '#ffd86b';
+              }
+            } else {
+              console.warn('fetchAndUpdate: parsing failed and target not found for', targetSelector);
+              if (statusEl && targetSelector === '.events-list') {
+                statusEl.textContent = 'Events refresh parse failed';
+                statusEl.style.color = '#ff6b6b';
+              }
+            }
+          }
+        } catch (e) {
+          console.error('fetchAndUpdate error for', url, e);
+          if (statusEl && targetSelector === '.events-list') {
+            statusEl.textContent = 'Events refresh error: ' + (e && e.message ? e.message : String(e));
+            statusEl.style.color = '#ff6b6b';
+          }
+        }
       }
 
-      // Events refresh
+      // Events refresh — use same fetch-then-schedule pattern as other refreshes
       function refreshEvents() {
-        fetchAndUpdate('/events-fragment', '.events-list');
+        fetchAndUpdate('/events-fragment', '.events-fragment');
         setTimeout(refreshEvents, REFRESH_EVENTS);
       }
-      setTimeout(refreshEvents, REFRESH_EVENTS);
 
-      // Bus times refresh
-      function refreshBuses() {
-        fetchAndUpdate('/buses-fragment', '.bus-times');
-        setTimeout(refreshBuses, REFRESH_BUSES);
+      function scheduleInitialFetches() {
+        // initial fetches that need DOM elements present
+        // start the events refresh loop (does initial fetch and schedules next)
+        refreshEvents();
+        // also trigger initial todoist/buses fetches if their functions are defined
+        try { if (typeof refreshTodoist === 'function') refreshTodoist(); } catch (e) {}
+        try { if (typeof refreshBuses === 'function') refreshBuses(); } catch (e) {}
       }
-      setTimeout(refreshBuses, REFRESH_BUSES);
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', scheduleInitialFetches);
+      } else {
+        scheduleInitialFetches();
+      }
 
       // Current weather refresh
       function refreshCurrentWeather() {
@@ -53,19 +151,35 @@
       }
       setTimeout(refreshCurrentWeather, REFRESH_CURRENT_WEATHER);
 
-      // 5-day forecast refresh
+      // 7-day forecast refresh
       function refreshForecast() {
-        fetchAndUpdate('/forecast-weather-fragment', '.weather-forecast');
+        fetchAndUpdate('/forecast-weather-fragment', '.forecast-provider');
         setTimeout(refreshForecast, REFRESH_FORECAST);
       }
       setTimeout(refreshForecast, REFRESH_FORECAST);
 
       // News refresh
       function refreshNews() {
-        fetchAndUpdate('/news-fragment', '.news-ticker');
+        fetchAndUpdate('/news-fragment', '.news-fragment');
         setTimeout(refreshNews, REFRESH_NEWS);
       }
       setTimeout(refreshNews, REFRESH_NEWS);
+
+      // Todoist/Tasks refresh (every 10 minutes)
+      const REFRESH_TODOIST = 10 * 60 * 1000; // 10 mins
+      function refreshTodoist() {
+        fetchAndUpdate('/todoist-fragment', '.todoist-container');
+      }
+      // polling
+      setInterval(refreshTodoist, REFRESH_TODOIST);
+
+      // Buses refresh (every 5 minutes)
+      const REFRESH_BUSES = 5 * 60 * 1000; // 5 mins
+      function refreshBuses() {
+        fetchAndUpdate('/buses-fragment', '.bus-times');
+      }
+      // polling
+      setInterval(refreshBuses, REFRESH_BUSES);
 
       // Bin schedule refresh (every Thursday night at 23:59)
       function msUntilNextThursdayNight() {
@@ -91,21 +205,31 @@
       .hide-cursor {
       cursor: none;
       }
+      /* Clock uses digital-7-Mono */
+      #clock, .clock-display {
+        font-family: 'digital-7-mono', 'digital-7 Mono', 'digital-7-Mono', 'Digital-7', monospace;
+        font-variant-numeric: tabular-nums;
+      }
+      /* Date text color white */
+      #date {
+        color: #ffffff;
+      }
     </style>
 </head>
 <body class="hide-cursor">
 <div class="container">
     <!-- Left column: Calendar events -->
     <div class="col">
-        
-        {% include 'fragments/events-fragment.html' %}
+      {% include 'fragments/events-fragment.html' %}
+      <!-- events refresh status removed -->
     </div>
-    <!-- Middle column: Date and time -->
+
+    <!-- Middle column: Date, time, and bins -->
     <div class="col center">
         <div class="date-time">
-      <div class="date-display">
-        <div id="date"></div>
-      </div>
+            <div class="date-display">
+                <div id="date"></div>
+            </div>
             <div id="clock" class="clock-display">
                 {{ now.strftime('%H:%M') }}
             </div>
@@ -121,37 +245,21 @@
                 {% endfor %}
             </div>
         </div>
-        {% if bus_departures %}
-        {% set all_deps = [] %}
-        {% for bus in bus_departures %}
-            {% for dep in bus.departures[:2] %}
-                {% set _ = all_deps.append({'service': bus.service, 'destination': dep.destination, 'time': dep.time}) %}
-            {% endfor %}
-        {% endfor %}
-        {% set sorted_deps = all_deps|sort(attribute='time') %}
-        <div class="bus-times">
-            {% include 'fragments/buses-fragment.html' %}
+        <div class="todoist-container">
+          {% set tasks = todoist_tasks %}{% include 'fragments/todoist-fragment.html' %}
         </div>
-        {% else %}
-            <div class="bus-times">No bus departures available.</div>
-        {% endif %}
-        {% if not bus_departures %}
-            <div class="bus-times">No bus data available.</div>
-        {% endif %}
-        {% if not bin_info.bins %}
-            <div class="bin-collection">No bin collection data available.</div>
-        {% endif %}
+
+        <div class="bus-container">
+          {% include 'fragments/buses-fragment.html' %}
+        </div>
     </div>
-    
+
     <!-- Right column: Weather -->
-    <div class="col center">
+    <div class="col" id="weather-section">
         {% include 'fragments/current-weather-fragment.html' %}
         {% include 'fragments/forecast-weather-fragment.html' %}
     </div>
-    <!-- News ticker -->
-    {% include 'fragments/news-fragment.html' %}
 </div> <!-- end .container -->
 
-    
-</body>
-</html>
+<!-- News ticker -->
+{% include 'fragments/news-fragment.html' %}

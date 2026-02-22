@@ -1,31 +1,205 @@
-{# weather_fragment.html - Weather column fragment for AJAX refresh #}
-{% if forecast_days %}
+{# forecast-weather-fragment.html - Display 7-day forecast from PirateWeather in table format #}
+{% if pirate_forecast %}
     <div class="weather-forecast">
-        <div class="forecast">
-            <table class="forecast-table">
-                <tbody>
-                {% for day, weekday in forecast_days %}
-                    <tr class="forecast-row">
-                        <td class="forecast-weekday">
-                            {% if loop.index0 == 0 %}Today{% elif loop.index0 == 1 %}Tomorrow{% else %}{{ weekday }}{% endif %}
-                        </td>
-                        <td class="forecast-temp-high">
-                            <i class="bi {{ weather_map[day.significantWeatherCode|string].icon if day.significantWeatherCode|string in weather_map else 'bi-question-circle' }} weather-symbol" style="color: #fff; font-size:1.7em; vertical-align:middle;"></i>
-                            {{ day.maxScreenAirTemp|default('N/A')|float|round(0)|int if day.maxScreenAirTemp is defined else 'N/A' }}°C
-                        </td>
-                        <td class="forecast-temp-low">{{ day.minScreenAirTemp|default('N/A')|float|round(0)|int if day.minScreenAirTemp is defined else 'N/A' }}°C</td>
-                        <td class="forecast-desc">
-                            {{ weather_map[day.significantWeatherCode|string].desc if day.significantWeatherCode|string in weather_map else 'N/A' }}
-                            <div class="forecast-rain" style="font-size:0.95em; color:#7fffd4;">
-                                {{ day.probOfRain|default('N/A')|float|round(0)|int if day.probOfRain is defined else 'N/A' }}% rain
-                            </div>
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+        
+        {% if hourly_summary or daily_summary %}
+        <div class="forecast-summaries">
+            {% if hourly_summary %}
+            <div class="summary-block hourly-summary">
+                <div class="summary-label">Next 24 Hours</div>
+                <div class="summary-text">{{ hourly_summary }}</div>
+            </div>
+            {% endif %}
+            
+            {% if daily_summary %}
+            <div class="summary-block daily-summary">
+                <div class="summary-label">This Week</div>
+                <div class="summary-text">{{ daily_summary }}</div>
+            </div>
+            {% endif %}
         </div>
+        {% endif %}
+        
+        <div class="forecast-title">7-Day Forecast</div>
+        
+        <table class="forecast-table">
+            <thead>
+                <tr>
+                    <th>Day</th>
+                    <th></th>
+                    <th>High/Low</th>
+                    <th>Rain</th>
+                    <th>Wind</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for day, weekday in pirate_forecast %}
+                <tr class="forecast-row">
+                    <td class="forecast-day">
+                        {% if loop.index0 == 0 %}Today{% elif loop.index0 == 1 %}Tomorrow{% else %}{{ weekday }}{% endif %}
+                    </td>
+                    <td class="forecast-icon">
+                        <i class="weather-icon bi {{ weather_map[day.significantWeatherCode|string].icon if day.significantWeatherCode|string in weather_map else 'bi-question-circle' }}"></i>
+                    </td>
+                    <td class="forecast-temps">
+                        <span class="temp-high">{{ day.maxScreenAirTemp|default('N/A')|float|round(0)|int if day.maxScreenAirTemp is defined else 'N/A' }}°</span>
+                        <span class="temp-low">{{ day.minScreenAirTemp|default('N/A')|float|round(0)|int if day.minScreenAirTemp is defined else 'N/A' }}°</span>
+                    </td>
+                    
+                    <td class="forecast-rain">
+                        {{ day.probOfPrecipitation|default('N/A')|float|round(0)|int if day.probOfPrecipitation is defined else 'N/A' }}%
+                    </td>
+                    <td class="forecast-wind">
+                        {{ (day.windSpeed * 2.237)|default('N/A')|float|round(0)|int if day.windSpeed is defined else 'N/A' }} mph
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
+    
+    <style>
+        .forecast-title {
+            font-weight: bold;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #aaa;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .forecast-summaries {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+        
+        .summary-block {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 0.4rem;
+            padding: 0.8rem;
+        }
+        
+        .hourly-summary {
+            border-left-color: #7fffd4;
+        }
+        
+        .daily-summary {
+            border-left-color: #87ceeb;
+        }
+        
+        .summary-label {
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #aaa;
+            margin-bottom: 0.5rem;
+        }
+        
+        .summary-text {
+            font-size: 0.82rem;
+            color: #ddd;
+            line-height: 1.4;
+        }
+        
+        .forecast-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 1.05rem;
+        }
+        
+        .forecast-table thead {
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .forecast-table th {
+            padding: 0.8rem 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            color: #aaa;
+            text-transform: uppercase;
+            font-size: 0.78rem;
+            letter-spacing: 0.05em;
+        }
+        
+        .forecast-row {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: background 0.2s ease;
+        }
+        
+        .forecast-row:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        .forecast-row td {
+            padding: 0.8rem 0.5rem;
+            color: #fff;
+        }
+        
+        .forecast-day {
+            font-weight: 600;
+            min-width: 70px;
+            font-size: 1.0rem;
+        }
+        
+        .forecast-icon {
+            text-align: center;
+            font-size: 1.6rem;
+            width: 56px;
+        }
+        
+        .weather-icon {
+            color: #fff;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .forecast-temps {
+            font-weight: 600;
+            min-width: 70px;
+            font-size: 1.05rem;
+        }
+        
+        .temp-high {
+            color: #ff6b6b;
+            margin-right: 0.3rem;
+        }
+        
+        .temp-low {
+            color: #4a9eff;
+            font-size: 0.92em;
+        }
+        
+        .forecast-summary {
+            color: #ccc;
+            font-size: 0.8rem;
+            max-width: 150px;
+            word-break: break-word;
+        }
+        
+        .forecast-rain {
+            text-align: center;
+            min-width: 50px;
+            font-weight: 600;
+        }
+        
+        .forecast-wind {
+            text-align: center;
+            min-width: 70px;
+            font-weight: 600;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+    </style>
 {% else %}
-    <div class="weather-error">5 day weather data not available.</div>
+    <div class="weather-error">Forecast data not available.</div>
 {% endif %}

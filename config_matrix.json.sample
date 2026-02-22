@@ -1,4 +1,4 @@
-{ "METOFFICE_API_KEY": "your_metoffice_api_key_here",
+{ "PIRATEWEATHER_API_KEY": "your_pirate_weather_api_key_here",
   "WEATHER_LOCATION": "your location here",
   "WEATHER_LATITUDE": "your latitude here",
   "WEATHER_LONGITUDE": "your longitude here",
