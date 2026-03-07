@@ -1,0 +1,8 @@
+.weather-icon-svg{
+  display:block;
+  max-width:100%;
+  height:auto;
+}
+.weather-icon-svg .sun, .weather-icon-svg .cloud, .weather-icon-svg .rain {
+  pointer-events:none;
+}

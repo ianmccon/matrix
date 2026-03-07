@@ -101,15 +101,15 @@ body {
     {"name": "Hazel", "url": "https://user.fm/calendar/v1-161c47d1a9da9452ff113a66eb6b128d/Hazel%20Appointments.ics", "color": "#fcfcfc"},
     {"name": "Hotel", "url": "https://user.fm/calendar/v1-c8c400a6db161b9d0f2f32691289d3ef/Hotel%20Stays.ics", "color": ""}
 /* Events calendar */
-.event-event {
+.event-events {
     color: #1e5631;
 }
 /* Gigs calendar */
-.event-gig {
+.event-gigs {
     color: #a65c00;
 }
 /* Holidays calendar */
-.event-holiday {
+.event-holidays {
     color: #a12a2a;
 }
 /* Ian calendar */
@@ -123,6 +123,10 @@ body {
 /* Hotel calendar */
 .event-hotel {
     color: #a65c00;
+}
+.event-rugby,
+.event-icon.event-rugby {
+    color: #005eb8;
 }
 .event-icon {
     color: #1e88e5;

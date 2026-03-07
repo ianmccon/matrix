@@ -10,23 +10,33 @@
         <li class="event-row" style="display:flex; align-items:center; justify-content:space-between;">
             <div class="event-left" style="display:flex; align-items:center; text-align:left;">
                 {% if event.calendar|lower == 'events' %}
-                    <i class="bi bi-calendar-event event-icon event-events" title="Event" style="margin-right:10px;"></i>
+                    {% set event_class = 'event-events' %}
+                    <i class="fa-solid fa-calendar-check event-icon {{ event_class }}" title="Event" style="margin-right:10px;"></i>
                 {% elif event.calendar|lower == 'gigs' %}
-                    <i class="bi bi-music-note-beamed event-icon event-gigs" title="Gig" style="margin-right:10px;"></i>
+                    {% set event_class = 'event-gigs' %}
+                    <i class="fa-solid fa-music event-icon {{ event_class }}" title="Gig" style="margin-right:10px;"></i>
                 {% elif event.calendar|lower == 'holidays' %}
-                    <i class="bi bi-umbrella event-icon event-holidays" title="Holiday" style="margin-right:10px;"></i>
+                    {% set event_class = 'event-holidays' %}
+                    <i class="fa-solid fa-cart-flatbed-suitcase event-icon {{ event_class }}" title="Holiday" style="margin-right:10px;"></i>
                 {% elif event.calendar|lower == 'ian' %}
-                    <i class="bi bi-person-bounding-box event-icon event-ian" title="Ian" style="margin-right:10px;"></i>
+                    {% set event_class = 'event-ian' %}
+                    <i class="fa-solid fa-stethoscope event-icon {{ event_class }}" title="Ian" style="margin-right:10px;"></i>
                 {% elif event.calendar|lower == 'hazel' %}
-                    <i class="bi bi-person event-icon event-hazel" title="Hazel" style="margin-right:10px;"></i>
+                    {% set event_class = 'event-hazel' %}
+                    <i class="fa-solid fa-stethoscope event-icon {{ event_class }}" title="Hazel" style="margin-right:10px;"></i>
                 {% elif event.calendar|lower == 'hotel stays' %}
-                    <i class="bi bi-building event-icon event-hotel" title="Hotel Stay" style="margin-right:10px;"></i>
+                    {% set event_class = 'event-hotel' %}
+                    <i class="fa-solid fa-hotel event-icon {{ event_class }}" title="Hotel Stay" style="margin-right:10px;"></i>
+                {% elif 'rugby' in (event.calendar|lower) %}
+                    {% set event_class = 'event-rugby' %}
+                    <i class="fa-solid fa-football event-icon {{ event_class }}" title="Rugby" style="margin-right:10px;"></i>
                 {% else %}
-                    <i class="bi bi-calendar2-week event-icon" title="Other" style="margin-right:10px;"></i>
+                    {% set event_class = '' %}
+                    <i class="fa-solid fa-calendar-week event-icon" title="Other" style="margin-right:10px;"></i>
                 {% endif %}
-                <span class="event-summary event-{{event.calendar|lower}}">{{ (event.summary[:20] ~ '...') if event.summary|length > 20 else event.summary }}</span>
+                <span class="event-summary {{ event_class }}">{{ (event.summary[:20] ~ '...') if event.summary|length > 20 else event.summary }}</span>
             </div>
-            <div class="event-date event-{{event.calendar|lower}}">
+            <div class="event-date {{ event_class }}">
                 {% if event.display_date %}
                     {{ event.display_date }}
                 {% endif %}
@@ -40,15 +50,24 @@
 </div>
 
 <style>
+    .events-fragment .events-list li {
+        margin-bottom: 6px;
+        padding-bottom: 3px;
+    }
+    .events-fragment .event-row {
+        padding: 4px 0;
+        font-size: 1.2em;
+    }
     .events-fragment .event-summary {
-        font-size: 0.9rem;
-        line-height: 1.2;
+        font-size: 1.3rem;
+        line-height: 1.4;
+        font-weight: 500;
     }
     .events-fragment .event-date {
-        font-size: 0.8rem;
-        color: #ccc;
+        font-size: 1.2rem;
+        font-weight: 600;
     }
     .events-fragment .event-icon {
-        font-size: 1.05rem;
+        font-size: 1.4rem;
     }
 </style>

@@ -51,9 +51,6 @@
                             {% endif %}
                         {% endif %}
                         <img class="weather-svg" src="/static/icons/{{ icon_name }}.svg" width="40" height="40" alt="{{ weather_map[dcode].desc if dcode in weather_map else 'Weather' }}">
-                        <noscript>
-                            <span class="weather-icon weather-emoji">{{ weather_map[dcode].symbol if dcode in weather_map else '❓' }}</span>
-                        </noscript>
                     </td>
                     <td class="forecast-temps">
                         <span class="temp-high">{{ day.maxScreenAirTemp|default('N/A')|float|round(0)|int if day.maxScreenAirTemp is defined else 'N/A' }}°</span>
@@ -167,16 +164,6 @@
             text-align: center;
             font-size: 1.6rem;
             width: 56px;
-        }
-        
-        .weather-icon {
-            color: #fff;
-        }
-
-        .weather-emoji {
-            font-size: 1.6rem;
-            display: inline-block;
-            line-height: 1;
         }
         
         .temp-high {

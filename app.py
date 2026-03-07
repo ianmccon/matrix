@@ -8,7 +8,6 @@ import datetime
 import os
 import requests
 from collections import defaultdict
-from bus_departures import get_departures_for_stop
 # --- CONFIG ---
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config_matrix.json')
 with open(CONFIG_PATH) as f:
@@ -24,8 +23,6 @@ PIRATEWEATHER_API_KEY = config.get("PIRATEWEATHER_API_KEY", "")
 TODOIST_API_KEY = 'ce6e344c9815d4a39bfcc3533254d046dfdf1c2b'
 
 app = Flask(__name__)
-
-now = datetime.datetime.now()
 
 # Helper function to convert wind bearing (degrees) to compass direction
 def bearing_to_direction(bearing):
@@ -43,6 +40,7 @@ app.jinja_env.filters['bearing_to_direction'] = bearing_to_direction
 
 # --- Scaffolded data fetchers ---
 def get_events():
+    now = datetime.datetime.now()
     all_events = []
     for cal in FASTMAIL_CALENDARS:
         events = parse_ics_events_from_url(cal['url'], cal['name'], cal['color'])
@@ -253,14 +251,14 @@ def events_fragment():
                 elif adt.date() == tomorrow_date:
                     display = f"Tomorrow - {time_compact}"
                 else:
-                    display = f"{adt.strftime('%B')} {adt.day}{day_suffix(adt.day)} - {time_compact}"
+                    display = f"{adt.strftime('%b')} {adt.day}{day_suffix(adt.day)} - {time_compact}"
             elif isinstance(dt, datetime.date):
                 if dt == now_dt.date():
                     display = 'Today'
                 elif dt == tomorrow_date:
                     display = 'Tomorrow'
                 else:
-                    display = f"{dt.strftime('%B')} {dt.day}{day_suffix(dt.day)}"
+                    display = f"{dt.strftime('%b')} {dt.day}{day_suffix(dt.day)}"
         except Exception:
             display = ''
         e['display_date'] = display
@@ -278,18 +276,6 @@ def weather_fragment():
                          hourly_summary=hourly_summary,
                          daily_summary=daily_summary,
                          weather_map=WEATHER_MAP)
-
-
-@app.route('/buses-fragment')
-def buses_fragment():
-    """Return the buses fragment for a configured stop (6280325770 by default)."""
-    stop_id = getattr(app, 'BUS_STOP_ID', None) or '6280325770'
-    try:
-        deps = get_departures_for_stop(stop_id)
-    except Exception:
-        deps = []
-    # Template expects `sorted_deps` variable
-    return render_template('fragments/buses-fragment.html', sorted_deps=deps)
 
 # Separate AJAX endpoints for individual weather fragments
 @app.route('/current-weather-fragment')
@@ -380,6 +366,7 @@ def get_this_week_bins():
             continue
         if name in bin_details:
             bins.append(bin_details[name])
+
     return {
         'bins': bins,
         'collection_day': config.get('collection_day', 'Thursday')
@@ -565,25 +552,19 @@ def index():
                 elif adt.date() == tomorrow_date:
                     display = f"Tomorrow - {time_compact}"
                 else:
-                    display = f"{adt.strftime('%B')} {adt.day}{day_suffix(adt.day)} - {time_compact}"
+                    display = f"{adt.strftime('%b')} {adt.day}{day_suffix(adt.day)} - {time_compact}"
             elif isinstance(dt, datetime.date):
                 if dt == now_dt.date():
                     display = 'Today'
                 elif dt == tomorrow_date:
                     display = 'Tomorrow'
                 else:
-                    display = f"{dt.strftime('%B')} {dt.day}{day_suffix(dt.day)}"
+                    display = f"{dt.strftime('%b')} {dt.day}{day_suffix(dt.day)}"
         except Exception:
             display = ''
         e['display_date'] = display
     # Fetch Todoist tasks for initial render
     todoist_tasks = get_todoist_tasks()
-        # Fetch bus departures for initial render (stop configurable via app.BUS_STOP_ID)
-    try:
-        stop_id = getattr(app, 'BUS_STOP_ID', None) or '6280325770'
-        sorted_deps = get_departures_for_stop(stop_id)
-    except Exception:
-        sorted_deps = []
 
     return render_template(
         'index.html',
@@ -598,7 +579,6 @@ def index():
         bin_info=bin_info,
         weather_map=WEATHER_MAP,
         todoist_tasks=todoist_tasks,
-            sorted_deps=sorted_deps,
     )
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 /* Colored backgrounds for event sources */
 .event-events {
-    color: #acdbbc;
+    color: #68ed83;
 }
 .event-gigs {
     color: #f59e42;
@@ -9,13 +9,16 @@
     color: #d44b4b;
 }
 .event-ian {
-    color: #47b4df;
+    color: #33ffff;
 }
 .event-hazel {
-    color: #fcfcfc;
+    color: #cdcd00;
 }
 .event-hotel {
-    color: #f5eb5c;
+    color: #fafd49;
+}
+.event-rugby {
+    color: #2b89e0;
 }
 html, body {
     overflow: hidden !important;
@@ -68,62 +71,6 @@ body, html, * {
     font-size: 1.18em;
     margin-right: 0.2em;
 }
-.bus-times {
-    margin-top:2em; 
-    background:rgba(30,32,34,0.92); 
-    border-radius:10px; 
-    padding:1em 1.5em; 
-    box-shadow:0 2px 8px #0002;
-}
-.bus-times table {
-    width: 100%;
-    border-collapse: collapse;
-}
-.bus-times td {
-    padding: 0.2em 0.7em;
-    color: #adaaaa;
-}
-.bus-times td:first-child {
-    color: #b2fff7;
-    text-align: left;
-}
-.bus-times td:nth-child(2) {
-    text-align: left;
-}
-.bus-times td:last-child {
-    text-align: right;
-    color: #ddbf17;
-    font-family: 'Fira Mono', monospace;
-}
-.bus-times span {
-    display: inline-block;
-    min-width: 2.5em;
-    padding: 0.18em 0.7em;
-    background: #222c2e;
-    color: #7fffd4;
-    border-radius: 0.7em;
-    border: 2px solid #7fffd4;
-    font-weight: 700;
-    font-size: 1.15em;
-    text-align: center;
-    letter-spacing: 0.01em;
-    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
-    vertical-align: middle;
-}
-.bus-times .bus-destination {
-    color: #b2fff7;
-    padding: 0.2em 0.7em;
-    text-align: left;
-    font-size: 1.1em;
-}
-.bus-times .bus-time {
-    text-align: right;
-    color: #ddbf17;
-    font-family: 'Fira Mono', monospace;
-    font-size: 1.15em;
-    padding: 0.2em 0 0.2em 0.7em;
-}
-
 
 /* Date and clock styling */
 /* Date and clock styling - more prominent */

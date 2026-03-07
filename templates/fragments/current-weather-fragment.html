@@ -5,8 +5,8 @@
             Updated: {% if pirate_weather.time is defined %}{{ pirate_weather.time[11:16] }}{% else %}N/A{% endif %}
         </div>
         
-        <div class="weather-main" style="display:flex; align-items:center; gap:0.4rem;">
-            <div class="weather-large" style="display:flex; align-items:center; gap:0.4rem; flex:1;">
+        <div class="weather-main" style="display:flex; align-items:center; gap:0.8rem;">
+            <div class="weather-large" style="display:flex; align-items:center; justify-content:center; gap:0.9rem; flex:1;">
                 <div class="weather-icon-container">
                     {% set code = pirate_weather.significantWeatherCode|string %}
                     {# derive icon filename from config mapping (strip leading "bi-" prefix) #}
@@ -19,10 +19,7 @@
                             {% set icon_name = raw_icon %}
                         {% endif %}
                     {% endif %}
-                    <img class="weather-svg" src="/static/icons/{{ icon_name }}.svg" width="64" height="64" alt="{{ weather_map[code].desc if code in weather_map else 'Weather' }}">
-                    <noscript>
-                        <span class="weather-icon weather-emoji">{{ weather_map[code].symbol if code in weather_map else '❓' }}</span>
-                    </noscript>
+                    <img class="weather-svg" src="/static/icons/{{ icon_name }}.svg" width="100" height="100" alt="{{ weather_map[code].desc if code in weather_map else 'Weather' }}">
                 </div>
                 <div class="weather-temp-block">
                     <div class="weather-temp">
@@ -64,14 +61,6 @@
             margin-bottom: 0.75rem;
         }
 
-        .weather-emoji {
-            font-size: 2.6rem;
-            line-height: 1;
-            display: inline-block;
-            transform-origin: center;
-            text-shadow: 0 2px 6px rgba(0,0,0,0.35);
-        }
-
         .weather-main {
             margin-bottom: 1rem;
         }
@@ -79,7 +68,7 @@
         .weather-large {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 1.1rem;
             margin-bottom: 0.5rem;
         }
         
@@ -88,16 +77,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            width: 100px;
+            min-width: 100px;
+            height: 100px;
         }
-        
-        .weather-icon {
-            color: #fff;
+
+        .weather-icon-container .weather-svg,
+        .weather-icon-container .weather-icon-svg {
+            display: block;
+            margin: 0 auto;
         }
-        
-        
-        
+
         .weather-temp-block {
-            flex: 1;
+            flex: 0 0 auto;
         }
         
         .weather-temp {

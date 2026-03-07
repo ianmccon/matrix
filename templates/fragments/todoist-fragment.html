@@ -10,12 +10,6 @@
                 <div class="todo-project">
                     {% if project.tasks and project.tasks|length > 0 %}
                         <table class="todo-table" style="width:100%; border-collapse:collapse; margin-bottom:0.5em;">
-                            <thead>
-                                <tr>
-                                    <th style="text-align:left; padding:6px;"></th>
-                                    <th style="text-align:left; padding:6px; width:140px;">Due</th>
-                                </tr>
-                            </thead>
                             <tbody>
                                 {% for t in project.tasks %}
                                     <tr>
