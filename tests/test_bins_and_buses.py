@@ -1,17 +1,26 @@
-import unittest
-from app import app
+import pytest
+from app import app as flask_app
 
-class BinsTestCase(unittest.TestCase):
-    def setUp(self):
-        self.app = app.test_client()
-        self.app.testing = True
 
-    def test_bin_collection(self):
-        # Bin info is rendered in the main index page
-        response = self.app.get('/')
-        self.assertEqual(response.status_code, 200)
-        html = response.get_data(as_text=True)
-        self.assertIn('bin', html.lower())
+@pytest.fixture
+def client():
+    flask_app.testing = True
+    with flask_app.test_client() as c:
+        yield c
 
-if __name__ == '__main__':
-    unittest.main()
+
+def test_bin_collection_index_renders(client):
+    response = client.get('/')
+    assert response.status_code == 200
+    assert 'bin' in response.get_data(as_text=True).lower()
+
+
+def test_bins_fragment_returns_200(client):
+    response = client.get('/bins-fragment')
+    assert response.status_code == 200
+
+
+def test_bins_fragment_contains_bin_collection(client):
+    response = client.get('/bins-fragment')
+    html = response.get_data(as_text=True)
+    assert 'bin-collection' in html

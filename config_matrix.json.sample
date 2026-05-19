@@ -1,7 +1,15 @@
 { "PIRATEWEATHER_API_KEY": "your_pirate_weather_api_key_here",
+  "TODOIST_API_KEY": "your_todoist_api_key_here",
+  "TIMEZONE": "Europe/London",
   "WEATHER_LOCATION": "your location here",
   "WEATHER_LATITUDE": "your latitude here",
   "WEATHER_LONGITUDE": "your longitude here",
+  "EAST_MED_WEATHER_LOCATION": "Rhodes, Greece",
+  "EAST_MED_WEATHER_LATITUDE": "36.4341",
+  "EAST_MED_WEATHER_LONGITUDE": "28.2176",
+  "DUBROVNIK_WEATHER_LOCATION": "Dubrovnik, Croatia",
+  "DUBROVNIK_WEATHER_LATITUDE": "42.6507",
+  "DUBROVNIK_WEATHER_LONGITUDE": "18.0944",
   "FASTMAIL_CALENDARS": [
     {"name": "Events", "url": "your calendar .ics file here", "color": "#51c27c"},
     {"name": "Holidays", "url": "your calendar .ics file here", "color": "#c2517c"}

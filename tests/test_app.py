@@ -1,28 +1,76 @@
-import unittest
-from app import app
+import pytest
+from unittest.mock import patch
+from app import app as flask_app
 
-class AppTestCase(unittest.TestCase):
-    def setUp(self):
-        self.app = app.test_client()
-        self.app.testing = True
 
-    def test_events_fragment_renders(self):
-        response = self.app.get('/events-fragment')
-        self.assertEqual(response.status_code, 200)
-        html = response.get_data(as_text=True)
-        self.assertIn('events-list', html)  # Check for the events list container
+@pytest.fixture
+def client():
+    flask_app.testing = True
+    with flask_app.test_client() as c:
+        yield c
 
-    def test_news_fragment(self):
-        response = self.app.get('/news-fragment')
-        self.assertEqual(response.status_code, 200)
-        html = response.get_data(as_text=True)
-        self.assertIn('news', html.lower())
 
-    def test_weather_fragment(self):
-        response = self.app.get('/current-weather-fragment')
-        self.assertEqual(response.status_code, 200)
-        html = response.get_data(as_text=True)
-        self.assertIn('weather', html.lower())
+def test_events_fragment_renders(client):
+    response = client.get('/events-fragment')
+    assert response.status_code == 200
+    assert 'events-list' in response.get_data(as_text=True)
 
-if __name__ == '__main__':
-    unittest.main()
+
+@patch('app.get_news_items', return_value=[])
+def test_news_fragment_returns_200(mock_news, client):
+    response = client.get('/news-fragment')
+    assert response.status_code == 200
+
+
+@patch('app.get_news_items', return_value=[
+    {'title': 'Test', 'link': 'http://example.com', 'summary': 'Summary', 'published': None}
+])
+def test_news_fragment_contains_news_item(mock_news, client):
+    response = client.get('/news-fragment')
+    assert response.status_code == 200
+    assert 'Test' in response.get_data(as_text=True)
+
+
+_EMPTY_WEATHER = (None, None, None, None, 'Home')
+
+
+@patch('app.get_pirate_weather_data', return_value=_EMPTY_WEATHER)
+def test_current_weather_fragment_returns_200(mock_weather, client):
+    response = client.get('/current-weather-fragment')
+    assert response.status_code == 200
+
+
+@patch('app.get_pirate_weather_data', return_value=(None, None, None, None, 'Rhodes, Greece'))
+def test_current_weather_fragment_passes_location_param(mock_weather, client):
+    response = client.get('/current-weather-fragment?location=east_med')
+    assert response.status_code == 200
+    mock_weather.assert_called_once_with('east_med')
+
+
+@patch('app.get_pirate_weather_data', return_value=(None, [], '', '', 'Home'))
+def test_forecast_weather_fragment_returns_200(mock_weather, client):
+    response = client.get('/forecast-weather-fragment')
+    assert response.status_code == 200
+
+
+@patch('app.get_pirate_weather_data', return_value=(None, [], '', '', 'Rhodes, Greece'))
+def test_forecast_weather_fragment_passes_location_param(mock_weather, client):
+    response = client.get('/forecast-weather-fragment?location=east_med')
+    assert response.status_code == 200
+    mock_weather.assert_called_once_with('east_med')
+
+
+@patch('app.get_todoist_tasks', return_value=[])
+def test_todoist_fragment_returns_200(mock_tasks, client):
+    response = client.get('/todoist-fragment')
+    assert response.status_code == 200
+
+
+@patch('app.get_todoist_tasks', return_value=[
+    {'id': '1', 'name': 'Test Project', 'color': '#fff',
+     'tasks': [{'content': 'Buy milk', 'due': '', 'id': 't1'}]}
+])
+def test_todoist_fragment_renders_task(mock_tasks, client):
+    response = client.get('/todoist-fragment')
+    assert response.status_code == 200
+    assert 'Buy milk' in response.get_data(as_text=True)

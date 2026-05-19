@@ -1,6 +1,7 @@
 {# current-weather-fragment.html - Display PirateWeather current conditions with detailed info #}
 {% if pirate_weather %}
     <div class="current-weather">
+        <div class="weather-location">{{ weather_location|default('Weather') }}</div>
         <div class="weather-updated">
             Updated: {% if pirate_weather.time is defined %}{{ pirate_weather.time[11:16] }}{% else %}N/A{% endif %}
         </div>
@@ -59,6 +60,14 @@
             font-size: 0.85rem;
             color: #aaa;
             margin-bottom: 0.75rem;
+        }
+
+        .weather-location {
+            font-size: 0.85rem;
+            color: #7fffd4;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.35rem;
         }
 
         .weather-main {

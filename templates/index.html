@@ -14,6 +14,10 @@
       const REFRESH_CURRENT_WEATHER = 60 * 60 * 1000;  // 1 hour
       const REFRESH_FORECAST = 3 * 60 * 60 * 1000;     // 3 hours
       const REFRESH_NEWS = 60 * 60 * 1000;     // 1 hour
+      const WEATHER_LOCATIONS = ['home', 'east_med', 'dubrovnik'];
+      let weatherLocationIndex = 0;
+      const REFRESH_WEATHER_ROTATE = 30 * 1000;  // 30 secs
+      const weatherCache = {};
 
       // Helper: fetch and update a section
       async function fetchAndUpdate(url, targetSelector, onSuccess) {
@@ -148,19 +152,57 @@
         scheduleInitialFetches();
       }
 
-      // Current weather refresh
-      function refreshCurrentWeather() {
-        fetchAndUpdate('/current-weather-fragment', '.current-weather');
-        setTimeout(refreshCurrentWeather, REFRESH_CURRENT_WEATHER);
+      // Fetch and cache weather HTML for a single location
+      async function fetchWeatherForLocation(location) {
+        try {
+          const [curResp, fcResp] = await Promise.all([
+            fetch('/current-weather-fragment?location=' + encodeURIComponent(location), {cache: 'no-store'}),
+            fetch('/forecast-weather-fragment?location=' + encodeURIComponent(location), {cache: 'no-store'})
+          ]);
+          const entry = {};
+          if (curResp.ok) entry.current = await curResp.text();
+          if (fcResp.ok) entry.forecast = await fcResp.text();
+          weatherCache[location] = entry;
+        } catch (e) {
+          console.error('fetchWeatherForLocation error', location, e);
+        }
       }
-      setTimeout(refreshCurrentWeather, REFRESH_CURRENT_WEATHER);
 
-      // 7-day forecast refresh
-      function refreshForecast() {
-        fetchAndUpdate('/forecast-weather-fragment', '.forecast-provider');
-        setTimeout(refreshForecast, REFRESH_FORECAST);
+      // Swap the displayed weather to a cached location's HTML
+      function showWeatherFromCache(location) {
+        const entry = weatherCache[location];
+        if (!entry) return;
+        const parser = new DOMParser();
+        if (entry.current) {
+          const doc = parser.parseFromString(entry.current, 'text/html');
+          const newEl = doc.querySelector('.current-weather');
+          const targetEl = document.querySelector('.current-weather');
+          if (newEl && targetEl) targetEl.innerHTML = newEl.innerHTML;
+        }
+        if (entry.forecast) {
+          const doc = parser.parseFromString(entry.forecast, 'text/html');
+          const newEl = doc.querySelector('.weather-forecast');
+          const targetEl = document.querySelector('.weather-forecast');
+          if (newEl && targetEl) targetEl.innerHTML = newEl.innerHTML;
+        }
       }
-      setTimeout(refreshForecast, REFRESH_FORECAST);
+
+      // Refresh all locations' data from API (once per hour)
+      async function refreshWeatherData() {
+        await Promise.all(WEATHER_LOCATIONS.map(loc => fetchWeatherForLocation(loc)));
+        setTimeout(refreshWeatherData, REFRESH_CURRENT_WEATHER);
+      }
+
+      // Rotate the displayed location (once per minute)
+      function rotateWeatherDisplay() {
+        const location = WEATHER_LOCATIONS[weatherLocationIndex % WEATHER_LOCATIONS.length];
+        showWeatherFromCache(location);
+        weatherLocationIndex = (weatherLocationIndex + 1) % WEATHER_LOCATIONS.length;
+        setTimeout(rotateWeatherDisplay, REFRESH_WEATHER_ROTATE);
+      }
+
+      // Initial load: fetch all, then start rotating
+      refreshWeatherData().then(() => rotateWeatherDisplay());
 
       // News refresh
       function refreshNews() {
@@ -177,21 +219,51 @@
       // polling
       setInterval(refreshTodoist, REFRESH_TODOIST);
 
-      // Bin schedule refresh (every Thursday at 07:00)
-      function msUntilNextThursday7am() {
+      // Med cruise countdown
+      (function() {
+        const CRUISE_DATE = new Date('2026-05-28T06:00:00');
+        function updateCountdown() {
+          const now = new Date();
+          const diff = CRUISE_DATE - now;
+          const days  = diff <= 0 ? 0 : Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = diff <= 0 ? 0 : Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const mins  = diff <= 0 ? 0 : Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const secs  = diff <= 0 ? 0 : Math.floor((diff % (1000 * 60)) / 1000);
+          document.getElementById('cd-days').textContent  = days;
+          document.getElementById('cd-hours').textContent = String(hours).padStart(2,'0');
+          document.getElementById('cd-mins').textContent  = String(mins).padStart(2,'0');
+          document.getElementById('cd-secs').textContent  = String(secs).padStart(2,'0');
+        }
+        function startCountdown() {
+          updateCountdown();
+          setInterval(updateCountdown, 1000);
+          // Highlight today's itinerary row
+          const today = new Date().toISOString().slice(0, 10);
+          const row = document.querySelector('.itinerary-table tr[data-date="' + today + '"]');
+          if (row) row.classList.add('it-today');
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', startCountdown);
+        } else {
+          startCountdown();
+        }
+      })();
+
+      // Bin schedule refresh (every Thursday at 08:00)
+      function msUntilNextThursday8am() {
         const now = new Date();
         const day = now.getDay(); // Sunday=0, Thursday=4
         const daysUntilThursday = (4 - day + 7) % 7;
-        const nextThursday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilThursday, 7, 0, 0, 0);
+        const nextThursday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + daysUntilThursday, 8, 0, 0, 0);
         if (nextThursday < now) nextThursday.setDate(nextThursday.getDate() + 7);
         return nextThursday - now;
       }
       function refreshBins() {
-        fetchAndUpdate('/', '.bin-collection');
+        fetchAndUpdate('/bins-fragment', '.bin-collection');
         setTimeout(applyBinColors, 300);
-        setTimeout(refreshBins, msUntilNextThursday7am());
+        setTimeout(refreshBins, msUntilNextThursday8am());
       }
-      setTimeout(refreshBins, msUntilNextThursday7am());
+      setTimeout(refreshBins, msUntilNextThursday8am());
     </script>
     <!-- Load external dashboard JS -->
     <script id="news-events-data" type="application/json">{{ news_items|tojson|safe }}</script>
@@ -208,10 +280,111 @@
       #clock, .clock-display {
         font-family: 'digital-7-mono', 'digital-7 Mono', 'digital-7-Mono', 'Digital-7', monospace;
         font-variant-numeric: tabular-nums;
+        font-size: 4.3rem;
       }
       /* Date text color white */
       #date {
         color: #ffffff;
+        font-size: 1.45rem;
+        line-height: 1.1;
+      }
+      /* Cruise countdown */
+      .cruise-countdown {
+        margin-top: 1.2rem;
+      }
+      .countdown-display {
+        display: flex;
+        gap: 0.8rem;
+        justify-content: center;
+        margin: 0.75rem 0 0.5rem;
+      }
+      .countdown-block {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 0.5rem;
+        padding: 0.5rem 0.8rem;
+        min-width: 3.2rem;
+      }
+      .countdown-value {
+        font-family: 'digital-7-mono', 'Digital-7', monospace;
+        font-size: 2rem;
+        color: #7fffd4;
+        line-height: 1;
+      }
+      .countdown-label {
+        font-size: 0.65rem;
+        color: #aaa;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-top: 0.25rem;
+      }
+      .countdown-date {
+        text-align: center;
+        font-size: 0.8rem;
+        color: #888;
+        margin-top: 0.25rem;
+      }
+      /* Cruise itinerary */
+      .cruise-itinerary {
+        margin-top: 1rem;
+      }
+      .itinerary-title {
+        font-weight: bold;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #aaa;
+        margin-bottom: 0.4rem;
+        padding-bottom: 0.3rem;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      .itinerary-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.88rem;
+      }
+      .itinerary-table th {
+        padding: 3px 6px;
+        color: #888;
+        text-transform: uppercase;
+        font-size: 0.68rem;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+        text-align: left;
+      }
+      .itinerary-table tr {
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+      }
+      .itinerary-table td {
+        padding: 4px 6px;
+        color: #ccc;
+      }
+      .itinerary-table td.it-day {
+        color: #ffd86b;
+        white-space: nowrap;
+        width: 7rem;
+      }
+      .itinerary-table td.it-port {
+        width: 100%;
+        color: #6bb8ff;
+      }
+      .it-arr,
+      .it-dep {
+        color: #8fb3b3;
+        font-size: 0.78rem;
+        white-space: nowrap;
+        text-align: right;
+        width: 3.4rem;
+      }
+      .itinerary-table tr.it-today td {
+        color: #7fffd4;
+        font-weight: 700;
+      }
+      .itinerary-table tr.it-today .it-day::before {
+        content: '\25B6\00A0';
       }
     </style>
 </head>
@@ -238,15 +411,46 @@
             <div class="bin-title">This week's bin collection ({{ bin_info.collection_day }}):</div>
             <div class="bin-list">
                 {% for bin in bin_info.bins %}
-                    <span class="bin-item" data-bin-color="{{ bin.color }}">
+                    <span class="bin-item" data-bin-color="{{ bin.color }}" style="color: {{ bin.color }}">
                         <span class="bin-icon"><img src="{{ bin.icon }}" alt="{{ bin.name }} bin" style="height:1.5em;vertical-align:middle;"></span> {{ bin.name }}
                     </span>
                 {% endfor %}
             </div>
         </div>
 
-        <div class="todoist-container">
-          {% set tasks = todoist_tasks %}{% include 'fragments/todoist-fragment.html' %}
+        <div class="cruise-countdown" id="cruise-countdown">
+            <div class="forecast-title">Med Cruise Countdown</div>
+            <div class="countdown-display">
+                <div class="countdown-block"><span class="countdown-value" id="cd-days">--</span><span class="countdown-label">days</span></div>
+                <div class="countdown-block"><span class="countdown-value" id="cd-hours">--</span><span class="countdown-label">hrs</span></div>
+                <div class="countdown-block"><span class="countdown-value" id="cd-mins">--</span><span class="countdown-label">min</span></div>
+                <div class="countdown-block"><span class="countdown-value" id="cd-secs">--</span><span class="countdown-label">sec</span></div>
+            </div>
+            <div class="countdown-date">Flight departs 06:00 &bull; 28 May 2026</div>
+        </div>
+
+        <div class="cruise-itinerary" id="cruise-itinerary">
+            <div class="itinerary-title">Cruise Itinerary</div>
+            <table class="itinerary-table">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Port</th>
+                <th>Arr</th>
+                <th>Dep</th>
+              </tr>
+            </thead>
+                <tbody>
+              <tr data-date="2026-05-28"><td class="it-day">Thu 28 May</td><td class="it-port">Dubrovnik, Croatia</td><td class="it-arr">-</td><td class="it-dep">21:00</td></tr>
+              <tr data-date="2026-05-29"><td class="it-day">Fri 29 May</td><td class="it-port">At Sea (Cruising day)</td><td class="it-arr">-</td><td class="it-dep">-</td></tr>
+              <tr data-date="2026-05-30"><td class="it-day">Sat 30 May</td><td class="it-port">Valletta, Malta</td><td class="it-arr">09:00</td><td class="it-dep">18:00</td></tr>
+              <tr data-date="2026-05-31"><td class="it-day">Sun 31 May</td><td class="it-port">Messina, Sicily</td><td class="it-arr">08:00</td><td class="it-dep">17:00</td></tr>
+              <tr data-date="2026-06-01"><td class="it-day">Mon 1 Jun</td><td class="it-port">Argostoli, Kefalonia</td><td class="it-arr">12:00</td><td class="it-dep">20:00</td></tr>
+              <tr data-date="2026-06-02"><td class="it-day">Tue 2 Jun</td><td class="it-port">Corfu, Greece</td><td class="it-arr">08:00</td><td class="it-dep">17:00</td></tr>
+              <tr data-date="2026-06-03"><td class="it-day">Wed 3 Jun</td><td class="it-port">Kotor, Montenegro</td><td class="it-arr">08:00</td><td class="it-dep">17:00</td></tr>
+              <tr data-date="2026-06-04"><td class="it-day">Thu 4 Jun</td><td class="it-port">Dubrovnik, Croatia</td><td class="it-arr">04:00</td><td class="it-dep">-</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
 

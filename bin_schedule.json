@@ -1,13 +1,29 @@
 {
   "bins": [
-    {"name": "Waste", "color": "#888", "icon": "/static/icons/grey_bin.svg"},
-    {"name": "Garden", "color": "#8B5E3C", "icon": "/static/icons/brown_bin.svg"},
-    {"name": "Recycling", "color": "#2ecc40", "icon": "/static/icons/blue_bin.svg"},
-    {"name": "Glass", "color": "#5bc0de", "icon": "/static/icons/red_bin.svg"}
-  ],
-  "schedule": [
-    {"week": 0, "bins": ["Recycling", "Glass"]},
-    {"week": 1, "bins": ["Waste", "Garden"]}
-  ],
-  "collection_day": "Thursday"
+    {
+      "name": "Waste",
+      "color": "#888",
+      "icon": "/static/icons/grey_bin.svg"
+    },
+    {
+      "name": "Garden",
+      "color": "#8B5E3C",
+      "icon": "/static/icons/brown_bin.svg"
+    },
+    {
+      "name": "Recycling",
+      "color": "#2ecc40",
+      "icon": "/static/icons/blue_bin.svg"
+    },
+    {
+      "name": "Glass",
+      "color": "#e74c3c",
+      "icon": "/static/icons/red_bin.svg"
+    },
+    {
+      "name": "Paper",
+      "color": "#2ecc40",
+      "icon": "/static/icons/green_bin.svg"
+    }
+  ]
 }
