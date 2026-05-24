@@ -1,7 +1,35 @@
 # --- Fragment endpoints for AJAX section refreshes ---
+
 import json
 import feedparser
 from flask import Flask, render_template, request, jsonify
+import os
+
+
+
+
+from diskcache import Cache
+# Diskcache-backed persistent cache for weather data
+_weather_cache = Cache('./weather_cache_disk')
+def get_cached_weather(key, fetch_func, cache_seconds=3600):
+    entry = _weather_cache.get(key)
+    if entry:
+        data, ts = entry
+        age = (datetime.datetime.now(datetime.timezone.utc) - ts).total_seconds()
+        if age < cache_seconds:
+            print(f"Weather cache hit for key: {key}")
+            return data
+        else:
+            print(f"Weather cache expired for key: {key}")
+    else:
+        print(f"Weather cache miss for key: {key}")
+    data = fetch_func()
+    try:
+        _weather_cache.set(key, (data, datetime.datetime.now(datetime.timezone.utc)), expire=cache_seconds)
+        print(f"Weather cache set for key: {key}")
+    except Exception as e:
+        print(f"Weather cache write error for key: {key}: {e}")
+    return data
 from concurrent.futures import ThreadPoolExecutor
 from icalendar import Calendar
 import datetime
@@ -179,107 +207,82 @@ def get_events():
 
 def get_pirate_weather_data(location_key='home'):
     """Fetch weather data from PirateWeather API (alternative provider)"""
-    if not PIRATEWEATHER_API_KEY:
-        print('PirateWeather API key not configured')
-        return (None, None, None, None, None)
-
-    location = get_weather_location(location_key)
-    lat = location['lat']
-    lon = location['lon']
-    url = f"https://api.pirateweather.net/forecast/{PIRATEWEATHER_API_KEY}/{lat},{lon}"
-    params = {
-        'units': 'uk2'  # UK units: Celsius, m/s
-    }
-    
-    try:
-        resp = requests.get(url, params=params, timeout=10)
-        if resp.status_code != 200:
-            print('PirateWeather API fetch failed:', resp.text)
-            return (None, None, None, None, location['name'])
-        
-        data = resp.json()
-        
-        # Extract summaries
-        hourly_summary = data.get('hourly', {}).get('summary', '')
-        daily_summary = data.get('daily', {}).get('summary', '')
-        
-        # Current weather from 'currently' block
-        currently = data.get('currently', {})
-        if not currently:
-            print('No current weather data from PirateWeather')
-            return (None, None, None, None, location['name'])
-        
-        # Convert PirateWeather response to Met Office-like format for template compatibility
-        # Convert Unix timestamp to ISO8601 string
-        current_time = datetime.datetime.fromtimestamp(currently.get('time', 0), tz=datetime.timezone.utc)
-        iso_time = current_time.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        icon = currently.get('icon', 'cloudy')
-        weather_code = ICON_TO_CODE.get(icon, '8')
-        
-        current = {
-            'time': iso_time,
-            'significantWeatherCode': int(weather_code),
-            'icon': icon,
-            'maxScreenAirTemp': currently.get('temperature'),
-            'feelsLikeTemperature': currently.get('apparentTemperature'),
-            'probOfPrecipitation': int(currently.get('precipProbability', 0) * 100),
-            'windSpeed': currently.get('windSpeed'),
-            'windGust': currently.get('windGust'),
-            'windBearing': currently.get('windBearing'),
-            'visibility': currently.get('visibility'),
-            'pressure': currently.get('pressure'),
-            'dewPoint': currently.get('dewPoint'),
-            'summary': currently.get('summary', ''),
-            'location': location['name']
+    def fetch():
+        location = get_weather_location(location_key)
+        lat = location['lat']
+        lon = location['lon']
+        url = f"https://api.pirateweather.net/forecast/{PIRATEWEATHER_API_KEY}/{lat},{lon}"
+        params = {
+            'units': 'uk2',
+            'exclude': 'minutely,alerts',
+            'extend': 'hourly'
         }
-        
-        # Forecast: next 7 days from 'daily' data
-        daily_data = data.get('daily', {}).get('data', [])
-        if not daily_data:
-            print('No daily forecast data from PirateWeather')
-            return (None, None, None, None, location['name'])
-        
-        forecast_days = []
-        today_local = now_local().date()
-        for day in daily_data:
-            dt_utc = datetime.datetime.fromtimestamp(day['time'], tz=datetime.timezone.utc)
-            dt_local = dt_utc.astimezone(APP_TIMEZONE)
-            if dt_local.date() < today_local:
-                continue
-            weekday = dt_local.strftime('%a')
-            
-            # Convert daily data to Met Office-like format
-            day_iso_time = dt_utc.strftime('%Y-%m-%dT%H:%M:%SZ')
-            day_icon = day.get('icon', 'cloudy')
-            day_weather_code = ICON_TO_CODE.get(day_icon, '8')
-            
-            day_data = {
-                'time': day_iso_time,
-                'significantWeatherCode': int(day_weather_code),
-                'icon': day_icon,
-                'maxScreenAirTemp': day.get('temperatureMax'),
-                'minScreenAirTemp': day.get('temperatureMin'),
-                'feelsLikeTemperature': day.get('apparentTemperatureMax'),
-                'probOfPrecipitation': int(day.get('precipProbability', 0) * 100),
-                'windSpeed': day.get('windSpeed'),
-                'windGust': day.get('windGust'),
-                'windBearing': day.get('windBearing'),
-                'humidity': int(day.get('humidity', 0) * 100),
-                'visibility': day.get('visibility'),
-                'cloudCover': int(day.get('cloudCover', 0) * 100),
-                'summary': day.get('summary', '')
+        try:
+            resp = requests.get(url, params=params, timeout=10)
+            if resp.status_code != 200:
+                print('PirateWeather API fetch failed:', resp.text)
+                return (None, None, None, None, location['name'])
+            data = resp.json()
+            # Current weather
+            currently = data.get('currently', {})
+            if not currently:
+                print('No current weather data from PirateWeather, full data:', data)
+                return (None, None, None, None, location['name'])
+            current_time = datetime.datetime.fromtimestamp(currently.get('time'), APP_TIMEZONE)
+            iso_time = current_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+            icon = currently.get('icon', 'cloudy')
+            weather_code = ICON_TO_CODE.get(icon, '7')
+            current = {
+                'time': iso_time,
+                'significantWeatherCode': weather_code,
+                'icon': icon,
+                'maxScreenAirTemp': currently.get('temperature'),
+                'feelsLikeTemperature': currently.get('apparentTemperature', currently.get('temperature')),
+                'probOfPrecipitation': currently.get('precipProbability'),
+                'windSpeed': currently.get('windSpeed'),
+                'windGust': currently.get('windGust'),
+                'windBearing': currently.get('windBearing'),
+                'visibility': currently.get('visibility'),
+                'pressure': currently.get('pressure'),
+                'dewPoint': currently.get('dewPoint'),
+                'summary': currently.get('summary', ''),
+                'location': location['name']
             }
-            
-            forecast_days.append((day_data, weekday))
-            if len(forecast_days) >= 7:
-                break
+            # Forecast: next 7 days from 'daily' data
+            daily = data.get('daily', {}).get('data', [])
+            forecast_days = []
+            for i in range(min(7, len(daily))):
+                dt_utc = datetime.datetime.fromtimestamp(daily[i]['time'], datetime.timezone.utc)
+                dt_local = dt_utc.astimezone(APP_TIMEZONE)
+                weekday = dt_local.strftime('%a')
+                day_icon = daily[i].get('icon', 'cloudy')
+                day_weather_code = ICON_TO_CODE.get(day_icon, '7')
+                day_data = {
+                    'time': dt_utc.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                    'significantWeatherCode': day_weather_code,
+                    'icon': day_icon,
+                    'maxScreenAirTemp': daily[i].get('temperatureHigh'),
+                    'minScreenAirTemp': daily[i].get('temperatureLow'),
+                    'probOfPrecipitation': daily[i].get('precipProbability'),
+                    'summary': daily[i].get('summary', '')
+                }
+                forecast_days.append((day_data, weekday))
 
-        return (current, forecast_days, hourly_summary, daily_summary, location['name'])
-    
-    except Exception as e:
-        print('Error fetching weather from PirateWeather:', e)
-        return (None, None, None, None, location['name'])
+            # Restore hourly and daily summaries if present
+            hourly_summary = ''
+            daily_summary = ''
+            if 'hourly' in data and isinstance(data['hourly'], dict):
+                hourly_summary = data['hourly'].get('summary', '') or ''
+            if 'daily' in data and isinstance(data['daily'], dict):
+                daily_summary = data['daily'].get('summary', '') or ''
+            # Fallback: use first day's summary if daily_summary is empty
+            if not daily_summary and daily and 'summary' in daily[0]:
+                daily_summary = daily[0]['summary']
+            return (current, forecast_days, hourly_summary, daily_summary, location['name'])
+        except Exception as e:
+            print('Error fetching weather from PirateWeather:', e)
+            return (None, None, None, None, location['name'])
+    return fetch()
 
 def get_news_items():
     newsfeed_url = "http://feeds.bbci.co.uk/news/scotland/rss.xml"
@@ -331,8 +334,10 @@ def events_fragment():
 @app.route('/current-weather-fragment')
 def current_weather_fragment():
     location_key = request.args.get('location', 'home')
-    pirate_weather, _, _, _, weather_location = get_pirate_weather_data(location_key)
-    
+    def fetch():
+        return get_pirate_weather_data(location_key)
+    cache_key = f"weather_current_{location_key}"
+    pirate_weather, _, _, _, weather_location = get_cached_weather(cache_key, fetch, cache_seconds=900)  # 15 min cache
     return render_template('fragments/current-weather-fragment.html',
                          pirate_weather=pirate_weather,
                          weather_location=weather_location,
@@ -341,8 +346,10 @@ def current_weather_fragment():
 @app.route('/forecast-weather-fragment')
 def forecast_weather_fragment():
     location_key = request.args.get('location', 'home')
-    _, pirate_forecast, hourly_summary, daily_summary, weather_location = get_pirate_weather_data(location_key)
-    
+    def fetch():
+        return get_pirate_weather_data(location_key)
+    cache_key = f"weather_forecast_{location_key}"
+    _, pirate_forecast, hourly_summary, daily_summary, weather_location = get_cached_weather(cache_key, fetch, cache_seconds=1800)  # 30 min cache
     return render_template('fragments/forecast-weather-fragment.html',
                          pirate_forecast=pirate_forecast,
                          hourly_summary=hourly_summary,
@@ -394,21 +401,21 @@ def cruise_temps():
     """Return JSON {date: \"N°\"} for each cruise port that has coordinates."""
     to_fetch = [(e['date'], e['lat'], e['lon']) for e in CRUISE_ITINERARY if e['lat'] is not None]
 
-    def _fetch(date, lat, lon):
+    def fetch(date, lat, lon):
         try:
             url = f"https://api.pirateweather.net/forecast/{PIRATEWEATHER_API_KEY}/{lat},{lon}"
             resp = requests.get(url, params={'units': 'uk2', 'exclude': 'minutely,hourly,daily,alerts'}, timeout=8)
             if resp.status_code == 200:
                 temp = resp.json().get('currently', {}).get('temperature')
                 if temp is not None:
-                    return date, f"{round(float(temp))}°"
+                    return f"{round(float(temp))}°"
         except Exception:
             pass
-        return date, '-'
+        return '-'
 
     results = {}
     with ThreadPoolExecutor(max_workers=7) as pool:
-        for date, label in pool.map(lambda args: _fetch(*args), to_fetch):
+        for (date, lat, lon), label in zip(to_fetch, pool.map(lambda args: fetch(*args), to_fetch)):
             results[date] = label
     return jsonify(results)
 

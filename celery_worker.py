@@ -4,12 +4,9 @@ from celery import Celery
 from celery.schedules import crontab
 from app import get_weather_data
 
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get(
-    "CELERY_RESULT_BACKEND", "redis://localhost:6379/0"
-)
 
-celery = Celery("matrix", broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
+# Use in-memory broker and backend for Celery (not for production, but avoids Redis)
+celery = Celery("matrix", broker="memory://", backend="cache+memory://")
 
 
 @celery.task
