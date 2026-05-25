@@ -1,6 +1,6 @@
-{# forecast-weather-fragment.html - Display 7-day forecast from PirateWeather in table format #}
+{# forecast-weather-fragment.html - Display 7-day forecast from Open-Meteo in table format #}
 <div class="weather-forecast">
-{% if pirate_forecast %}
+{% if openmeteo_forecast %}
         
         {% if hourly_summary or daily_summary %}
         <div class="forecast-summaries">
@@ -33,7 +33,7 @@
                 </tr>
             </thead>
             <tbody>
-            {% for day, weekday in pirate_forecast %}
+            {% for day, weekday in openmeteo_forecast %}
                 <tr class="forecast-row">
                     <td class="forecast-day">
                         {% if loop.index0 == 0 %}Today{% elif loop.index0 == 1 %}Tomorrow{% else %}{{ weekday }}{% endif %}

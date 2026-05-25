@@ -1,15 +1,15 @@
-{# current-weather-fragment.html - Display PirateWeather current conditions with detailed info #}
+{# current-weather-fragment.html - Display Open-Meteo current conditions with detailed info #}
 <div class="current-weather">
-{% if pirate_weather %}
+{% if openmeteo_weather %}
         <div class="weather-location">{{ weather_location|default('Weather') }}</div>
         <div class="weather-updated">
-            Updated: {% if pirate_weather.time is defined %}{{ pirate_weather.time[11:16] }}{% else %}N/A{% endif %}
+            Updated: {% if openmeteo_weather.time is defined %}{{ openmeteo_weather.time[11:16] }}{% else %}N/A{% endif %}
         </div>
         
         <div class="weather-main" style="display:flex; align-items:center; gap:0.8rem;">
             <div class="weather-large" style="display:flex; align-items:center; justify-content:center; gap:0.9rem; flex:1;">
                 <div class="weather-icon-container">
-                    {% set code = pirate_weather.significantWeatherCode|string %}
+                    {% set code = openmeteo_weather.significantWeatherCode|string %}
                     {# derive icon filename from config mapping (strip leading "bi-" prefix) #}
                     {% set icon_name = 'unknown' %}
                     {% if code in weather_map %}
@@ -24,10 +24,10 @@
                 </div>
                 <div class="weather-temp-block">
                     <div class="weather-temp">
-                        {{ pirate_weather.maxScreenAirTemp|default('N/A')|float|round(0)|int if pirate_weather.maxScreenAirTemp is defined else 'N/A' }}°C
+                        {{ openmeteo_weather.maxScreenAirTemp|default('N/A')|float|round(0)|int if openmeteo_weather.maxScreenAirTemp is defined else 'N/A' }}°C
                     </div>
                     <div class="weather-summary">
-                        {{ pirate_weather.summary|default('No description') }}
+                        {{ openmeteo_weather.summary|default('No description') }}
                     </div>
                 </div>
             </div>
@@ -36,15 +36,15 @@
                 <table class="weather-stats-table" style="border-collapse:collapse; min-width:160px;">
                     <tr>
                         <td class="ws-label" style="color:#aaa; padding:6px 8px; font-size:0.85rem;">Feels Like</td>
-                        <td class="ws-value" style="text-align:right; padding:6px 8px; font-weight:600;">{{ pirate_weather.feelsLikeTemperature|default('N/A')|float|round(0)|int if pirate_weather.feelsLikeTemperature is defined else 'N/A' }}°C</td>
+                        <td class="ws-value" style="text-align:right; padding:6px 8px; font-weight:600;">{{ openmeteo_weather.feelsLikeTemperature|default('N/A')|float|round(0)|int if openmeteo_weather.feelsLikeTemperature is defined else 'N/A' }}°C</td>
                     </tr>
                     <tr>
                         <td class="ws-label" style="color:#aaa; padding:6px 8px; font-size:0.85rem;">Rain</td>
-                        <td class="ws-value" style="text-align:right; padding:6px 8px; font-weight:600;">{{ pirate_weather.probOfPrecipitation|default('N/A')|float|round(0)|int if pirate_weather.probOfPrecipitation is defined else 'N/A' }}%</td>
+                        <td class="ws-value" style="text-align:right; padding:6px 8px; font-weight:600;">{{ openmeteo_weather.probOfPrecipitation|default('N/A')|float|round(0)|int if openmeteo_weather.probOfPrecipitation is defined else 'N/A' }}%</td>
                     </tr>
                     <tr>
                         <td class="ws-label" style="color:#aaa; padding:6px 8px; font-size:0.85rem;">Wind</td>
-                        <td class="ws-value" style="text-align:right; padding:6px 8px; font-weight:600;">{{ (pirate_weather.windSpeed * 2.237)|default('N/A')|float|round(0)|int if pirate_weather.windSpeed is defined else 'N/A' }} mph</td>
+                        <td class="ws-value" style="text-align:right; padding:6px 8px; font-weight:600;">{{ (openmeteo_weather.windSpeed * 2.237)|default('N/A')|float|round(0)|int if openmeteo_weather.windSpeed is defined else 'N/A' }} mph</td>
                     </tr>
                 </table>
             </div>

@@ -34,26 +34,26 @@ def test_news_fragment_contains_news_item(mock_news, client):
 _EMPTY_WEATHER = (None, None, None, None, 'Home')
 
 
-@patch('app.get_pirate_weather_data', return_value=_EMPTY_WEATHER)
+@patch('app.get_openmeteo_weather_data', return_value=_EMPTY_WEATHER)
 def test_current_weather_fragment_returns_200(mock_weather, client):
     response = client.get('/current-weather-fragment')
     assert response.status_code == 200
 
 
-@patch('app.get_pirate_weather_data', return_value=(None, None, None, None, 'Rhodes, Greece'))
+@patch('app.get_openmeteo_weather_data', return_value=(None, None, None, None, 'Rhodes, Greece'))
 def test_current_weather_fragment_passes_location_param(mock_weather, client):
     response = client.get('/current-weather-fragment?location=east_med')
     assert response.status_code == 200
     mock_weather.assert_called_once_with('east_med')
 
 
-@patch('app.get_pirate_weather_data', return_value=(None, [], '', '', 'Home'))
+@patch('app.get_openmeteo_weather_data', return_value=(None, [], '', '', 'Home'))
 def test_forecast_weather_fragment_returns_200(mock_weather, client):
     response = client.get('/forecast-weather-fragment')
     assert response.status_code == 200
 
 
-@patch('app.get_pirate_weather_data', return_value=(None, [], '', '', 'Rhodes, Greece'))
+@patch('app.get_openmeteo_weather_data', return_value=(None, [], '', '', 'Rhodes, Greece'))
 def test_forecast_weather_fragment_passes_location_param(mock_weather, client):
     response = client.get('/forecast-weather-fragment?location=east_med')
     assert response.status_code == 200

@@ -53,7 +53,6 @@ DUBROVNIK_WEATHER_LATITUDE = config.get("DUBROVNIK_WEATHER_LATITUDE", "42.6507")
 DUBROVNIK_WEATHER_LONGITUDE = config.get("DUBROVNIK_WEATHER_LONGITUDE", "18.0944")
 FASTMAIL_CALENDARS = config["FASTMAIL_CALENDARS"]
 WEATHER_MAP = config["WEATHER_MAP"]
-PIRATEWEATHER_API_KEY = config.get("PIRATEWEATHER_API_KEY", "")
 TODOIST_API_KEY = config.get("TODOIST_API_KEY", "")
 BIN_ICS_URL = config.get("BIN_ICS_URL", "")
 APP_TIMEZONE = ZoneInfo(config.get("TIMEZONE", "Europe/London"))
@@ -70,7 +69,7 @@ CRUISE_ITINERARY = [
     {'date': '2026-06-04', 'lat': 42.6507, 'lon': 18.0944},  # Dubrovnik
 ]
 
-# PirateWeather icon → Met Office significant weather code
+# Open-Meteo weathercode → Met Office significant weather code (legacy mapping, may need update)
 ICON_TO_CODE = {
     'clear-day': '1',
     'clear-night': '0',
@@ -205,82 +204,82 @@ def get_events():
     all_events.sort(key=event_dt_as_datetime)
     return all_events
 
-def get_pirate_weather_data(location_key='home'):
-    """Fetch weather data from PirateWeather API (alternative provider)"""
+
+def get_openmeteo_weather_data(location_key='home'):
+    """Fetch weather data from Open-Meteo API (open-meteo.com)"""
     def fetch():
         location = get_weather_location(location_key)
         lat = location['lat']
         lon = location['lon']
-        url = f"https://api.pirateweather.net/forecast/{PIRATEWEATHER_API_KEY}/{lat},{lon}"
+        url = "https://api.open-meteo.com/v1/forecast"
         params = {
-            'units': 'uk2',
-            'exclude': 'minutely,alerts',
-            'extend': 'hourly'
+            'latitude': lat,
+            'longitude': lon,
+            'current_weather': 'true',
+            'hourly': 'temperature_2m,apparent_temperature,precipitation_probability,weathercode,windspeed_10m,windgusts_10m,winddirection_10m,pressure_msl,visibility',
+            'daily': 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode',
+            'timezone': 'auto',
         }
         try:
             resp = requests.get(url, params=params, timeout=10)
             if resp.status_code != 200:
-                print('PirateWeather API fetch failed:', resp.text)
+                print('Open-Meteo API fetch failed:', resp.text)
                 return (None, None, None, None, location['name'])
             data = resp.json()
             # Current weather
-            currently = data.get('currently', {})
-            if not currently:
-                print('No current weather data from PirateWeather, full data:', data)
+            current_weather = data.get('current_weather', {})
+            if not current_weather:
+                print('No current weather data from Open-Meteo, full data:', data)
                 return (None, None, None, None, location['name'])
-            current_time = datetime.datetime.fromtimestamp(currently.get('time'), APP_TIMEZONE)
-            iso_time = current_time.strftime('%Y-%m-%dT%H:%M:%SZ')
-            icon = currently.get('icon', 'cloudy')
-            weather_code = ICON_TO_CODE.get(icon, '7')
+            # Open-Meteo weathercode mapping (see docs)
+            weather_code = str(current_weather.get('weathercode', '7'))
             current = {
-                'time': iso_time,
+                'time': current_weather.get('time'),
                 'significantWeatherCode': weather_code,
-                'icon': icon,
-                'maxScreenAirTemp': currently.get('temperature'),
-                'feelsLikeTemperature': currently.get('apparentTemperature', currently.get('temperature')),
-                'probOfPrecipitation': currently.get('precipProbability'),
-                'windSpeed': currently.get('windSpeed'),
-                'windGust': currently.get('windGust'),
-                'windBearing': currently.get('windBearing'),
-                'visibility': currently.get('visibility'),
-                'pressure': currently.get('pressure'),
-                'dewPoint': currently.get('dewPoint'),
-                'summary': currently.get('summary', ''),
+                'icon': weather_code,  # Use code as icon key for now
+                'maxScreenAirTemp': current_weather.get('temperature'),
+                'feelsLikeTemperature': current_weather.get('apparent_temperature', current_weather.get('temperature')),
+                'probOfPrecipitation': None,  # Not in current_weather
+                'windSpeed': current_weather.get('windspeed'),
+                'windGust': current_weather.get('windgusts'),
+                'windBearing': current_weather.get('winddirection'),
+                'visibility': None,  # Not in current_weather
+                'pressure': None,  # Not in current_weather
+                'dewPoint': None,  # Not in current_weather
+                'summary': '',  # Open-Meteo does not provide summary text
                 'location': location['name']
             }
             # Forecast: next 7 days from 'daily' data
-            daily = data.get('daily', {}).get('data', [])
+            daily = data.get('daily', {})
             forecast_days = []
-            for i in range(min(7, len(daily))):
-                dt_utc = datetime.datetime.fromtimestamp(daily[i]['time'], datetime.timezone.utc)
-                dt_local = dt_utc.astimezone(APP_TIMEZONE)
+            times = daily.get('time', [])
+            max_temps = daily.get('temperature_2m_max', [])
+            min_temps = daily.get('temperature_2m_min', [])
+            precip_probs = daily.get('precipitation_probability_max', [])
+            weathercodes = daily.get('weathercode', [])
+            for i in range(min(7, len(times))):
+                dt = times[i]
+                dt_obj = datetime.datetime.fromisoformat(dt)
+                dt_local = dt_obj.astimezone(APP_TIMEZONE)
                 weekday = dt_local.strftime('%a')
-                day_icon = daily[i].get('icon', 'cloudy')
-                day_weather_code = ICON_TO_CODE.get(day_icon, '7')
+                day_weather_code = str(weathercodes[i]) if i < len(weathercodes) else '7'
                 day_data = {
-                    'time': dt_utc.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                    'time': dt,
                     'significantWeatherCode': day_weather_code,
-                    'icon': day_icon,
-                    'maxScreenAirTemp': daily[i].get('temperatureHigh'),
-                    'minScreenAirTemp': daily[i].get('temperatureLow'),
-                    'probOfPrecipitation': daily[i].get('precipProbability'),
-                    'summary': daily[i].get('summary', '')
+                    'icon': day_weather_code,  # Use code as icon key for now
+                    'maxScreenAirTemp': max_temps[i] if i < len(max_temps) else None,
+                    'minScreenAirTemp': min_temps[i] if i < len(min_temps) else None,
+                    'probOfPrecipitation': precip_probs[i] if i < len(precip_probs) else None,
+                    'summary': ''
                 }
                 forecast_days.append((day_data, weekday))
 
-            # Restore hourly and daily summaries if present
+            # Open-Meteo does not provide summary text
             hourly_summary = ''
             daily_summary = ''
-            if 'hourly' in data and isinstance(data['hourly'], dict):
-                hourly_summary = data['hourly'].get('summary', '') or ''
-            if 'daily' in data and isinstance(data['daily'], dict):
-                daily_summary = data['daily'].get('summary', '') or ''
-            # Fallback: use first day's summary if daily_summary is empty
-            if not daily_summary and daily and 'summary' in daily[0]:
-                daily_summary = daily[0]['summary']
             return (current, forecast_days, hourly_summary, daily_summary, location['name'])
         except Exception as e:
-            print('Error fetching weather from PirateWeather:', e)
+            print('Error fetching weather from Open-Meteo:', e)
             return (None, None, None, None, location['name'])
     return fetch()
 
@@ -331,15 +330,17 @@ def events_fragment():
     return render_template('fragments/events-fragment.html', events=events, now=now_dt)
 
 # Separate AJAX endpoints for individual weather fragments
+
+# --- Open-Meteo weather fragments ---
 @app.route('/current-weather-fragment')
 def current_weather_fragment():
     location_key = request.args.get('location', 'home')
     def fetch():
-        return get_pirate_weather_data(location_key)
+        return get_openmeteo_weather_data(location_key)
     cache_key = f"weather_current_{location_key}"
-    pirate_weather, _, _, _, weather_location = get_cached_weather(cache_key, fetch, cache_seconds=900)  # 15 min cache
+    openmeteo_weather, _, _, _, weather_location = get_cached_weather(cache_key, fetch, cache_seconds=900)  # 15 min cache
     return render_template('fragments/current-weather-fragment.html',
-                         pirate_weather=pirate_weather,
+                         openmeteo_weather=openmeteo_weather,
                          weather_location=weather_location,
                          weather_map=WEATHER_MAP)
 
@@ -347,11 +348,11 @@ def current_weather_fragment():
 def forecast_weather_fragment():
     location_key = request.args.get('location', 'home')
     def fetch():
-        return get_pirate_weather_data(location_key)
+        return get_openmeteo_weather_data(location_key)
     cache_key = f"weather_forecast_{location_key}"
-    _, pirate_forecast, hourly_summary, daily_summary, weather_location = get_cached_weather(cache_key, fetch, cache_seconds=1800)  # 30 min cache
+    _, openmeteo_forecast, hourly_summary, daily_summary, weather_location = get_cached_weather(cache_key, fetch, cache_seconds=1800)  # 30 min cache
     return render_template('fragments/forecast-weather-fragment.html',
-                         pirate_forecast=pirate_forecast,
+                         openmeteo_forecast=openmeteo_forecast,
                          hourly_summary=hourly_summary,
                          daily_summary=daily_summary,
                          weather_location=weather_location,
@@ -398,15 +399,20 @@ def todoist_fragment():
 
 @app.route('/cruise-temps')
 def cruise_temps():
-    """Return JSON {date: \"N°\"} for each cruise port that has coordinates."""
+    """Return JSON {date: "N°"} for each cruise port that has coordinates using Open-Meteo."""
     to_fetch = [(e['date'], e['lat'], e['lon']) for e in CRUISE_ITINERARY if e['lat'] is not None]
 
     def fetch(date, lat, lon):
         try:
-            url = f"https://api.pirateweather.net/forecast/{PIRATEWEATHER_API_KEY}/{lat},{lon}"
-            resp = requests.get(url, params={'units': 'uk2', 'exclude': 'minutely,hourly,daily,alerts'}, timeout=8)
+            url = "https://api.open-meteo.com/v1/forecast"
+            params = {
+                'latitude': lat,
+                'longitude': lon,
+                'current_weather': 'true',
+            }
+            resp = requests.get(url, params=params, timeout=8)
             if resp.status_code == 200:
-                temp = resp.json().get('currently', {}).get('temperature')
+                temp = resp.json().get('current_weather', {}).get('temperature')
                 if temp is not None:
                     return f"{round(float(temp))}°"
         except Exception:
@@ -685,8 +691,8 @@ def index():
         'index.html',
         events=all_events,
         now=now,
-        pirate_weather=None,
-        pirate_forecast=None,
+        openmeteo_weather=None,
+        openmeteo_forecast=None,
         hourly_summary='',
         daily_summary='',
         news_items=news_items,

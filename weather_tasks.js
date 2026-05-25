@@ -6,8 +6,8 @@ const NodeCache = require('node-cache');
 const cache = new NodeCache({ stdTTL: 3600 }); // 1 hour default TTL
 
 /**
- * Get weather data from PirateWeather API
- * @param {string} apiKey - PirateWeather API key
+ * Get weather data from Open-Meteo API
+ * @param {string} apiKey - (unused for Open-Meteo)
  * @param {number} latitude - Location latitude
  * @param {number} longitude - Location longitude
  * @returns {Promise<Array>} [currentWeather, forecastDays] or [null, null] on error
@@ -31,12 +31,12 @@ async function getWeatherData(apiKey, latitude, longitude) {
           return [cacheData.current_weather, cacheData.forecast_days];
         }
       } catch (e) {
-        console.log('Could not read weather cache file, fetching live from PirateWeather...');
+        console.log('Could not read weather cache file, fetching live from Open-Meteo...');
       }
     }
 
-    // Fetch live from PirateWeather API
-    const url = `https://api.pirateweather.net/forecast/${apiKey}/${latitude},${longitude}`;
+    // Fetch live from Open-Meteo API
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
 
     const response = await axios.get(url, {
       timeout: 10000,
@@ -46,7 +46,7 @@ async function getWeatherData(apiKey, latitude, longitude) {
     });
 
     if (response.status !== 200) {
-      console.error('PirateWeather API request failed:', response.statusText);
+      console.error('Open-Meteo API request failed:', response.statusText);
       return [null, null];
     }
 
@@ -104,7 +104,7 @@ async function getWeatherData(apiKey, latitude, longitude) {
     return result;
 
   } catch (error) {
-    console.error('Error fetching weather from PirateWeather:', error.message);
+    console.error('Error fetching weather from Open-Meteo:', error.message);
     return [null, null];
   }
 }
@@ -118,7 +118,7 @@ function formatTemperature(temp) {
 }
 
 /**
- * Get weather icon/symbol mapping for PirateWeather icons
+ * Get weather icon/symbol mapping for Open-Meteo weathercodes
  */
 function getWeatherIcon(iconName) {
   const iconMap = {

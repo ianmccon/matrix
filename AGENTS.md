@@ -62,7 +62,7 @@ class MyTests(unittest.TestCase):
 - Timezone-aware datetime handling throughout — use `now_local()` helper (returns `datetime.now(APP_TIMEZONE)`), never `datetime.utcnow()`
 - `APP_TIMEZONE` is a `ZoneInfo` object loaded from config key `TIMEZONE` (default `Europe/London`)
 - API keys and secrets belong in `config_matrix.json`, not hardcoded in `app.py`
-- The `icon_to_code` mapping (PirateWeather icon → Met Office weather code) is a module-level constant, not defined inside a function
+- The `icon_to_code` mapping (Open-Meteo weathercode → Met Office weather code) is a module-level constant, not defined inside a function
 
 ## Existing tests are in the wrong style
 

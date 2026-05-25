@@ -4,7 +4,7 @@ Trust these instructions. Only search the codebase if information here is incomp
 
 ## What This Repository Is
 
-A Raspberry Pi kiosk dashboard (Flask/Jinja2) that displays on a fullscreen Chromium browser. Sections: calendar events, date/clock, bin collection schedule, cruise countdown + itinerary with live port temps, weather (PirateWeather API, 3 locations), news ticker, Todoist tasks. All sections refresh via AJAX fragment endpoints — no SPA framework, just plain JS fetching HTML partials and replacing `innerHTML`.
+A Raspberry Pi kiosk dashboard (Flask/Jinja2) that displays on a fullscreen Chromium browser. Sections: calendar events, date/clock, bin collection schedule, cruise countdown + itinerary with live port temps, weather (Open-Meteo API, 3 locations), news ticker, Todoist tasks. All sections refresh via AJAX fragment endpoints — no SPA framework, just plain JS fetching HTML partials and replacing `innerHTML`.
 
 ## Repository Layout
 
@@ -76,10 +76,10 @@ Template (HTML/Jinja2) changes are picked up on the next request without restart
 
 - **`app.py`**: all Flask routes, helpers, constants in one file. Config loaded at import via `config_matrix.json`.
 - **Fragment pattern**: `fetchAndUpdate(url, cssSelector)` in JS fetches HTML partial and replaces `innerHTML` of matching element.
-- **Weather**: `get_pirate_weather_data(location_key)` → `(current_dict, forecast_list, hourly_summary, daily_summary, location_name)`. Keys: `home`, `east_med`, `dubrovnik`. Units: `uk2` (°C, m/s wind).
+- **Weather**: `get_openmeteo_weather_data(location_key)` → `(current_dict, forecast_list, hourly_summary, daily_summary, location_name)`. Keys: `home`, `east_med`, `dubrovnik`. Units: (°C, m/s wind).
 - **Bins**: `get_this_week_bins()` always returns `{'bins': [...], 'collection_day': str}` — safe default on ICS failure.
 - **`as_local_datetime()`**: normalises `date` or `datetime` (naive or aware) to timezone-aware local datetime.
-- **`/cruise-temps`**: returns JSON `{date: "N°"}` — fetches PirateWeather `currently` for 7 port coordinates in parallel via `ThreadPoolExecutor`.
+- **`/cruise-temps`**: returns JSON `{date: "N°"}` — fetches Open-Meteo `current_weather` for 7 port coordinates in parallel via `ThreadPoolExecutor`.
 
 ## Flask Routes
 
