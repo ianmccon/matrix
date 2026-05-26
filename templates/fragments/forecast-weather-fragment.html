@@ -29,7 +29,6 @@
                     <th></th>
                     <th>High/Low</th>
                     <th>Rain</th>
-                    <th>Wind</th>
                 </tr>
             </thead>
             <tbody>
@@ -59,9 +58,6 @@
                     
                     <td class="forecast-rain">
                         {{ day.probOfPrecipitation|default('N/A')|float|round(0)|int if day.probOfPrecipitation is defined else 'N/A' }}%
-                    </td>
-                    <td class="forecast-wind">
-                        {{ (day.windSpeed * 2.237)|default('N/A')|float|round(0)|int if day.windSpeed is defined else 'N/A' }} mph
                     </td>
                 </tr>
             {% endfor %}

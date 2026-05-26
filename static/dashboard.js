@@ -1,3 +1,52 @@
+// Cruise Itinerary Temperatures
+async function updateItineraryTemps() {
+    try {
+        const resp = await fetch('/cruise-temps', {cache: 'no-store'});
+        if (!resp.ok) return;
+        const temps = await resp.json();
+        for (const [date, temp] of Object.entries(temps)) {
+            const cell = document.getElementById('it-temp-' + date);
+            if (cell) cell.textContent = temp;
+        }
+    } catch (e) { /* ignore */ }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateItineraryTemps);
+} else {
+    updateItineraryTemps();
+}
+// Cruise Countdown Timer
+function setupCruiseCountdown() {
+    // Set the cruise departure date/time (local time)
+    // 28 May 2026 06:00 (24h format, Europe/London)
+    const cruiseDeparture = new Date('2026-05-28T06:00:00+01:00');
+    function updateCountdown() {
+        const now = new Date();
+        let diff = cruiseDeparture - now;
+        if (diff < 0) diff = 0;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const mins = Math.floor((diff / (1000 * 60)) % 60);
+        const secs = Math.floor((diff / 1000) % 60);
+        const d = document.getElementById('cd-days');
+        const h = document.getElementById('cd-hours');
+        const m = document.getElementById('cd-mins');
+        const s = document.getElementById('cd-secs');
+        if (d) d.textContent = days;
+        if (h) h.textContent = hours.toString().padStart(2, '0');
+        if (m) m.textContent = mins.toString().padStart(2, '0');
+        if (s) s.textContent = secs.toString().padStart(2, '0');
+    }
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupCruiseCountdown);
+} else {
+    setupCruiseCountdown();
+}
 // Live clock
 function updateClock() {
     const now = new Date();

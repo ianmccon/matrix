@@ -222,12 +222,15 @@ def get_openmeteo_weather_data(location_key='home'):
         }
         try:
             resp = requests.get(url, params=params, timeout=10)
+            print('Open-Meteo API raw response:', resp.text)
             if resp.status_code != 200:
                 print('Open-Meteo API fetch failed:', resp.text)
                 return (None, None, None, None, location['name'])
             data = resp.json()
+            print('Open-Meteo API parsed JSON:', data)
             # Current weather
             current_weather = data.get('current_weather', {})
+            print('Parsed current_weather:', current_weather)
             if not current_weather:
                 print('No current weather data from Open-Meteo, full data:', data)
                 return (None, None, None, None, location['name'])
@@ -249,6 +252,7 @@ def get_openmeteo_weather_data(location_key='home'):
                 'summary': '',  # Open-Meteo does not provide summary text
                 'location': location['name']
             }
+            print('Parsed current dict for template:', current)
             # Forecast: next 7 days from 'daily' data
             daily = data.get('daily', {})
             forecast_days = []
@@ -273,7 +277,7 @@ def get_openmeteo_weather_data(location_key='home'):
                     'summary': ''
                 }
                 forecast_days.append((day_data, weekday))
-
+            print('Parsed forecast_days:', forecast_days)
             # Open-Meteo does not provide summary text
             hourly_summary = ''
             daily_summary = ''
@@ -687,17 +691,24 @@ def index():
             display = ''
         e['display_date'] = display
 
+    # Fetch current and forecast weather for initial page load (home location)
+    def fetch_weather():
+        return get_openmeteo_weather_data('home')
+    current_weather, forecast, hourly_summary, daily_summary, weather_location = get_cached_weather('weather_current_home', fetch_weather, cache_seconds=900)
+    def fetch_forecast():
+        return get_openmeteo_weather_data('home')
+    _, forecast_weather, hourly_summary_f, daily_summary_f, weather_location_f = get_cached_weather('weather_forecast_home', fetch_forecast, cache_seconds=1800)
     return render_template(
         'index.html',
         events=all_events,
         now=now,
-        openmeteo_weather=None,
-        openmeteo_forecast=None,
-        hourly_summary='',
-        daily_summary='',
+        openmeteo_weather=current_weather,
+        openmeteo_forecast=forecast_weather,
+        hourly_summary=hourly_summary_f,
+        daily_summary=daily_summary_f,
         news_items=news_items,
         bin_info=bin_info,
-        weather_location='',
+        weather_location=weather_location,
         weather_map=WEATHER_MAP,
     )
 

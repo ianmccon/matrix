@@ -1,39 +1,36 @@
 {# events_fragment.html - Events list fragment for AJAX refresh #}
 <div class="events-fragment">
-    <div class="forecast-title">
-        <span style="float:left;">Upcoming Events</span>
-        <span class="last-refreshed" style="float:right; font-weight:400; font-size:0.9em;">Updated: {{ now.strftime('%H:%M') }}</span>
-        <div style="clear:both;"></div>
-    </div>
     <ul class="events-list" style="list-style:none; padding-left:0; margin:0;">
     {% for event in events %}
         <li class="event-row" style="display:flex; align-items:center; justify-content:space-between;">
             <div class="event-left" style="display:flex; align-items:center; text-align:left;">
                 {% if event.calendar|lower == 'events' %}
                     {% set event_class = 'event-events' %}
-                    <i class="fa-solid fa-calendar-check event-icon {{ event_class }}" title="Event" style="margin-right:10px;"></i>
                 {% elif event.calendar|lower == 'gigs' %}
                     {% set event_class = 'event-gigs' %}
-                    <i class="fa-solid fa-music event-icon {{ event_class }}" title="Gig" style="margin-right:10px;"></i>
                 {% elif event.calendar|lower == 'holidays' %}
                     {% set event_class = 'event-holidays' %}
-                    <i class="fa-solid fa-cart-flatbed-suitcase event-icon {{ event_class }}" title="Holiday" style="margin-right:10px;"></i>
                 {% elif event.calendar|lower == 'ian' %}
                     {% set event_class = 'event-ian' %}
-                    <i class="fa-solid fa-stethoscope event-icon {{ event_class }}" title="Ian" style="margin-right:10px;"></i>
                 {% elif event.calendar|lower == 'hazel' %}
                     {% set event_class = 'event-hazel' %}
-                    <i class="fa-solid fa-stethoscope event-icon {{ event_class }}" title="Hazel" style="margin-right:10px;"></i>
                 {% elif event.calendar|lower == 'hotel stays' %}
                     {% set event_class = 'event-hotel' %}
-                    <i class="fa-solid fa-hotel event-icon {{ event_class }}" title="Hotel Stay" style="margin-right:10px;"></i>
                 {% elif 'rugby' in (event.calendar|lower) %}
                     {% set event_class = 'event-rugby' %}
-                    <i class="fa-solid fa-football event-icon {{ event_class }}" title="Rugby" style="margin-right:10px;"></i>
                 {% else %}
                     {% set event_class = '' %}
-                    <i class="fa-solid fa-calendar-week event-icon" title="Other" style="margin-right:10px;"></i>
                 {% endif %}
+                <i class="fa-solid event-icon
+                    {% if event.calendar|lower == 'events' %}fa-calendar-check event-events{% endif %}
+                    {% if event.calendar|lower == 'gigs' %}fa-music event-gigs{% endif %}
+                    {% if event.calendar|lower == 'holidays' %}fa-cart-flatbed-suitcase event-holidays{% endif %}
+                    {% if event.calendar|lower == 'ian' %}fa-stethoscope event-ian{% endif %}
+                    {% if event.calendar|lower == 'hazel' %}fa-stethoscope event-hazel{% endif %}
+                    {% if event.calendar|lower == 'hotel stays' %}fa-hotel event-hotel{% endif %}
+                    {% if 'rugby' in (event.calendar|lower) %}fa-football event-rugby{% endif %}
+                    {% if event_class == '' %}fa-calendar-week{% endif %}"
+                    title="Event Icon" style="margin-right:10px;"></i>
                 <span class="event-summary {{ event_class }}">{{ (event.summary[:20] ~ '...') if event.summary|length > 20 else event.summary }}</span>
             </div>
             <div class="event-date {{ event_class }}">
@@ -50,6 +47,17 @@
 </div>
 
 <style>
+    .events-title {
+        font-weight: bold;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #aaa;
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
     .events-fragment .events-list li {
         margin-bottom: 6px;
         padding-bottom: 3px;
@@ -70,4 +78,12 @@
     .events-fragment .event-icon {
         font-size: 1.4rem;
     }
+    /* Per-calendar color classes for icon, summary, and date only */
+    .event-events.event-icon, .event-summary.event-events, .event-date.event-events { color: #51c27c !important; }
+    .event-gigs.event-icon, .event-summary.event-gigs, .event-date.event-gigs { color: #f59e42 !important; }
+    .event-holidays.event-icon, .event-summary.event-holidays, .event-date.event-holidays { color: #d44b4b !important; }
+    .event-ian.event-icon, .event-summary.event-ian, .event-date.event-ian { color: #47b4df !important; }
+    .event-hazel.event-icon, .event-summary.event-hazel, .event-date.event-hazel { color: #fcfcfc !important; }
+    .event-hotel.event-icon, .event-summary.event-hotel, .event-date.event-hotel { color: #fafd49 !important; }
+    .event-rugby.event-icon, .event-summary.event-rugby, .event-date.event-rugby { color: #ff69b4 !important; }
 </style>

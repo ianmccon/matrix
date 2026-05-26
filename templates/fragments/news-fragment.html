@@ -1,15 +1,18 @@
 {# news_fragment.html - News ticker fragment for AJAX refresh #}
 <div class="news-fragment">
     
-    <div class="news-ticker">
-        <div class="news-content">
+    <div class="news-ticker" style="display: flex; justify-content: center; align-items: center; min-height: 80px;">
+        <div class="news-content" style="text-align: center; width: 100%;">
             {% if news_items and news_items|length > 0 %}
                 <div id="news-title" class="news-title">{{ news_items[0].title }}</div>
                 <div id="news-summary" class="news-summary">{{ news_items[0].summary }}</div>
             {% else %}
-                <div class="news-title">No news available.</div>
-                <div class="news-summary"></div>
+                <div id="news-title" class="news-title">No news available.</div>
+                <div id="news-summary" class="news-summary"></div>
             {% endif %}
+            <script>
+                window.newsEvents = {{ news_items|tojson|safe }};
+            </script>
         </div>
     </div>
 
