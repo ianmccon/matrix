@@ -1,12 +1,12 @@
 # --- Fragment endpoints for AJAX section refreshes ---
 import json
 import feedparser
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, jsonify
+from concurrent.futures import ThreadPoolExecutor
 from icalendar import Calendar
 import datetime
 import os
 import requests
-from collections import defaultdict
 from zoneinfo import ZoneInfo
 
 # --- CONFIG ---
@@ -27,8 +27,20 @@ FASTMAIL_CALENDARS = config["FASTMAIL_CALENDARS"]
 WEATHER_MAP = config["WEATHER_MAP"]
 PIRATEWEATHER_API_KEY = config.get("PIRATEWEATHER_API_KEY", "")
 TODOIST_API_KEY = config.get("TODOIST_API_KEY", "")
-BIN_ICS_URL = "https://user.fm/calendar/v1-7410a047c76de8e6ec2306fca1ebef77/Bins.ics"
+BIN_ICS_URL = config.get("BIN_ICS_URL", "")
 APP_TIMEZONE = ZoneInfo(config.get("TIMEZONE", "Europe/London"))
+
+# Cruise itinerary port coordinates (lat/lon None = at sea, no temperature)
+CRUISE_ITINERARY = [
+    {'date': '2026-05-28', 'lat': 42.6507, 'lon': 18.0944},  # Dubrovnik
+    {'date': '2026-05-29', 'lat': None,    'lon': None},      # At Sea
+    {'date': '2026-05-30', 'lat': 35.8997, 'lon': 14.5147},  # Valletta
+    {'date': '2026-05-31', 'lat': 38.1938, 'lon': 15.5540},  # Messina
+    {'date': '2026-06-01', 'lat': 38.1742, 'lon': 20.4892},  # Argostoli
+    {'date': '2026-06-02', 'lat': 39.6243, 'lon': 19.9217},  # Corfu
+    {'date': '2026-06-03', 'lat': 42.4247, 'lon': 18.7712},  # Kotor
+    {'date': '2026-06-04', 'lat': 42.6507, 'lon': 18.0944},  # Dubrovnik
+]
 
 # PirateWeather icon → Met Office significant weather code
 ICON_TO_CODE = {
@@ -315,20 +327,6 @@ def events_fragment():
 
     return render_template('fragments/events-fragment.html', events=events, now=now_dt)
 
-# Helper: render just the weather column
-@app.route('/weather-fragment')
-def weather_fragment():
-    location_key = request.args.get('location', 'home')
-    pirate_weather, pirate_forecast, hourly_summary, daily_summary, weather_location = get_pirate_weather_data(location_key)
-    
-    return render_template('fragments/weather_fragment.html', 
-                         pirate_weather=pirate_weather,
-                         pirate_forecast=pirate_forecast,
-                         hourly_summary=hourly_summary,
-                         daily_summary=daily_summary,
-                         weather_location=weather_location,
-                         weather_map=WEATHER_MAP)
-
 # Separate AJAX endpoints for individual weather fragments
 @app.route('/current-weather-fragment')
 def current_weather_fragment():
@@ -389,6 +387,30 @@ def news_fragment():
 def todoist_fragment():
     tasks = get_todoist_tasks()
     return render_template('fragments/todoist-fragment.html', tasks=tasks, now=now_local())
+
+
+@app.route('/cruise-temps')
+def cruise_temps():
+    """Return JSON {date: \"N°\"} for each cruise port that has coordinates."""
+    to_fetch = [(e['date'], e['lat'], e['lon']) for e in CRUISE_ITINERARY if e['lat'] is not None]
+
+    def _fetch(date, lat, lon):
+        try:
+            url = f"https://api.pirateweather.net/forecast/{PIRATEWEATHER_API_KEY}/{lat},{lon}"
+            resp = requests.get(url, params={'units': 'uk2', 'exclude': 'minutely,hourly,daily,alerts'}, timeout=8)
+            if resp.status_code == 200:
+                temp = resp.json().get('currently', {}).get('temperature')
+                if temp is not None:
+                    return date, f"{round(float(temp))}°"
+        except Exception:
+            pass
+        return date, '-'
+
+    results = {}
+    with ThreadPoolExecutor(max_workers=7) as pool:
+        for date, label in pool.map(lambda args: _fetch(*args), to_fetch):
+            results[date] = label
+    return jsonify(results)
 
 
 @app.route('/bins-fragment')
@@ -475,7 +497,7 @@ def _get_next_occurrence_date(component, today):
 
     freq = (rrule.get('FREQ') or [''])[0]
     if str(freq).upper() != 'WEEKLY':
-        return start_date if start_date >= today else None
+        return None
 
     return _next_weekly_occurrence(start_date, rrule, today)
 
@@ -526,7 +548,7 @@ def _get_bins_from_ics():
 
 
 def get_this_week_bins():
-    return _get_bins_from_ics()
+    return _get_bins_from_ics() or {'bins': [], 'collection_day': 'Unknown'}
 
 
 def get_todoist_tasks():
@@ -612,88 +634,58 @@ def get_todoist_tasks():
         return []
 
 
-if app is None:
-    app = Flask(__name__)
-
-
 # --- ICS PARSING ---
 def parse_ics_events_from_url(url, cal_name, color):
     events = []
     try:
-        resp = requests.get(url)
+        resp = requests.get(url, timeout=10)
         if resp.status_code != 200:
             return events
         cal = Calendar.from_ical(resp.content)
         for component in cal.walk():
             if component.name == "VEVENT":
+                dtstart = component.get('dtstart')
+                if dtstart is None:
+                    continue
                 summary = str(component.get('summary'))
-                dtstart = component.get('dtstart').dt
                 events.append({
-                    'dt': dtstart,
+                    'dt': dtstart.dt,
                     'summary': summary,
-                    'calendar': cal_name
+                    'calendar': cal_name,
+                    'color': color,
                 })
-    except Exception as e:
+    except Exception:
         pass
     return events
 
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    # Wheelie bin info
     bin_info = get_this_week_bins()
-    # Fetch BBC Scotland newsfeed
     news_items = get_news_items()
-    # Current time
     now = now_local()
-    
-    # Fetch weather
-    pirate_weather, pirate_forecast, hourly_summary, daily_summary, weather_location = get_pirate_weather_data('home')
-    
-    def datetimeformat(ts):
-        # Accepts either a UNIX timestamp or ISO8601 string
-        if isinstance(ts, (int, float)):
-            return datetime.datetime.fromtimestamp(int(ts), tz=APP_TIMEZONE).strftime('%H:%M')
-        try:
-            # Try ISO8601 string (Met Office 'time')
-            ds = ts.replace('Z', '+00:00')
-            dt = datetime.datetime.fromisoformat(ds)
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=APP_TIMEZONE)
-            else:
-                dt = dt.astimezone(APP_TIMEZONE)
-            return dt.strftime('%H:%M')
-        except Exception:
-            return str(ts)
-    
-    all_events = get_events()
-    # Annotate events with display strings for initial page load (Today/Tomorrow handling)
-    now_dt = now_local()
 
+    all_events = get_events()
     for e in all_events:
         dt = e.get('dt')
         try:
-            display = format_event_display(dt, now_dt)
+            display = format_event_display(dt, now)
         except Exception:
             display = ''
         e['display_date'] = display
-    # Fetch Todoist tasks for initial render
-    todoist_tasks = get_todoist_tasks()
 
     return render_template(
         'index.html',
         events=all_events,
         now=now,
-        pirate_weather=pirate_weather,
-        pirate_forecast=pirate_forecast,
-        hourly_summary=hourly_summary,
-        daily_summary=daily_summary,
-        datetimeformat=datetimeformat,
+        pirate_weather=None,
+        pirate_forecast=None,
+        hourly_summary='',
+        daily_summary='',
         news_items=news_items,
         bin_info=bin_info,
-        weather_location=weather_location,
+        weather_location='',
         weather_map=WEATHER_MAP,
-        todoist_tasks=todoist_tasks,
     )
 
 if __name__ == '__main__':

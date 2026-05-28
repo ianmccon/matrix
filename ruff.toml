@@ -1,0 +1,7 @@
+# Ruff configuration for matrix dashboard
+exclude = [
+    ".github/skills",
+    ".agents/skills",
+    "venv",
+    ".venv",
+]

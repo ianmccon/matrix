@@ -1,6 +1,6 @@
 {# current-weather-fragment.html - Display PirateWeather current conditions with detailed info #}
+<div class="current-weather">
 {% if pirate_weather %}
-    <div class="current-weather">
         <div class="weather-location">{{ weather_location|default('Weather') }}</div>
         <div class="weather-updated">
             Updated: {% if pirate_weather.time is defined %}{{ pirate_weather.time[11:16] }}{% else %}N/A{% endif %}
@@ -49,7 +49,6 @@
                 </table>
             </div>
         </div>
-    </div>
     
     <style>
         .current-weather {
@@ -150,3 +149,4 @@
 {% else %}
     <div class="weather-error">Weather data not available.</div>
 {% endif %}
+</div>

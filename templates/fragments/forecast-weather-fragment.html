@@ -1,6 +1,6 @@
 {# forecast-weather-fragment.html - Display 7-day forecast from PirateWeather in table format #}
+<div class="weather-forecast">
 {% if pirate_forecast %}
-    <div class="weather-forecast">
         
         {% if hourly_summary or daily_summary %}
         <div class="forecast-summaries">
@@ -67,7 +67,6 @@
             {% endfor %}
             </tbody>
         </table>
-    </div>
     
     <style>
         .forecast-title {
@@ -200,3 +199,4 @@
 {% else %}
     <div class="weather-error">Forecast data not available.</div>
 {% endif %}
+</div>

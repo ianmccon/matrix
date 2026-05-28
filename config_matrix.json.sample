@@ -1,4 +1,5 @@
 { "PIRATEWEATHER_API_KEY": "your_pirate_weather_api_key_here",
+  "BIN_ICS_URL": "your bin collection .ics URL here",
   "TODOIST_API_KEY": "your_todoist_api_key_here",
   "TIMEZONE": "Europe/London",
   "WEATHER_LOCATION": "your location here",

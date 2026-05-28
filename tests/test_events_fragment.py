@@ -1,7 +1,10 @@
 import pytest
 import datetime
+from zoneinfo import ZoneInfo
 from unittest.mock import patch
 from app import app as flask_app
+
+TZ = ZoneInfo('Europe/London')
 
 
 @pytest.fixture
@@ -20,17 +23,19 @@ def test_events_fragment_returns_list(client):
 @patch('app.parse_ics_events_from_url')
 @patch('app.FASTMAIL_CALENDARS', new=[{'url': 'dummy', 'name': 'Events', 'color': '#fff'}])
 def test_events_fragment_excludes_past_event_today(mock_parse_events, client):
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(tz=TZ)
     mock_parse_events.return_value = [
         {
             'dt': now - datetime.timedelta(hours=1),
             'summary': 'Past Today',
-            'calendar': 'Events'
+            'calendar': 'Events',
+            'color': '#fff',
         },
         {
             'dt': now + datetime.timedelta(hours=1),
             'summary': 'Future Today',
-            'calendar': 'Events'
+            'calendar': 'Events',
+            'color': '#fff',
         }
     ]
 

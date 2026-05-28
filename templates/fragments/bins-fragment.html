@@ -1,0 +1,10 @@
+<div class="bin-collection">
+    <div class="bin-title">This week's bin collection ({{ bin_info.collection_day }}):</div>
+    <div class="bin-list">
+        {% for bin in bin_info.bins %}
+            <span class="bin-item" data-bin-color="{{ bin.color }}" style="color: {{ bin.color }}">
+                <span class="bin-icon"><img src="{{ bin.icon }}" alt="{{ bin.name }} bin" style="height:1.5em;vertical-align:middle;"></span> {{ bin.name }}
+            </span>
+        {% endfor %}
+    </div>
+</div>
